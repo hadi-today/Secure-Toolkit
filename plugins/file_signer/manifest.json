@@ -1,0 +1,7 @@
+{
+  "name": "FileSigner",
+  "button_text": "Digital Signature Tool",
+  "description": "Sign files with your private keys and verify signatures with public keys.",
+  "module": "plugin",
+  "entry_point": "FileSignerWidget"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "PasswordManager",
+  "button_text": "Change Master Password",
+  "description": "Update the main application password.",
+  "module": "plugin",
+  "entry_point": "PasswordManagerWidget"
+}

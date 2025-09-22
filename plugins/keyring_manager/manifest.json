@@ -1,0 +1,7 @@
+{
+  "name": "KeyringManager",
+  "button_text": "Keyring Manager",
+  "description": "Manage your collection of public and private keys.",
+  "module": "plugin",
+  "entry_point": "KeyringManagerWidget"
+}

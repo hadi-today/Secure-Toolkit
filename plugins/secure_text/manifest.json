@@ -1,0 +1,7 @@
+{
+  "name": "SecureText",
+  "button_text": "Secure Text Tool",
+  "description": "Encrypt, decrypt, sign, and verify text snippets.",
+  "module": "plugin",
+  "entry_point": "SecureTextWidget"
+}

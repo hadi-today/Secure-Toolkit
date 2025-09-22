@@ -1,0 +1,7 @@
+{
+  "name": "FileEncryptor",
+  "button_text": "File Encryptor/Decryptor",
+  "description": "Encrypt and decrypt files using passwords or asymmetric keys.",
+  "module": "plugin",
+  "entry_point": "FileEncryptorWidget"
+}
