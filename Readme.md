@@ -1,7 +1,6 @@
 # Secure Toolkit v1.0
 
-![App Screenshot](https://via.placeholder.com/600x400.png?text=App+Screenshot+Here)
-*(نکته: این یک تصویر جایگزین است. شما می‌توانید یک اسکرین‌شات از برنامه خود گرفته و جایگزین این لینک کنید.)*
+
 
 A modular and secure desktop application built with Python and PyQt6 for performing various cryptographic operations. This toolkit provides a user-friendly graphical interface for managing cryptographic keys, encrypting/decrypting files, creating digital signatures, and securing text messages.
 
