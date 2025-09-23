@@ -34,7 +34,7 @@ The application is designed to be self-contained and easy to run. It uses a smar
 
 1.  **Clone the repository:**
     ```bash
-    git clone [your-repository-url]
+    git clone https://github.com/hadi-today/Secure-Toolkit
     cd secure-toolkit
     ```
 
