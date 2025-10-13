@@ -18,6 +18,7 @@ This application features a powerful plugin-based architecture, allowing for eas
 *   **Digital Signature Tool**: A standard tool to create and verify digital signatures for files, ensuring authenticity and integrity.
 *   **Secure Text Tool**: A quick and easy utility to encrypt, decrypt, and manage short text snippets for secure communication over insecure channels.
 *   **Internal Tools**: Includes plugins to securely change the master password.
+*   **Secure Editor**: A powerful, encrypted note-taking tool with built-in version control. This editor functions like a secure personal wiki, allowing you to create rich-text notes with formatting, images, and attachments. Every version of a note is encrypted with a key from your keyring and saved securely. Features include autosaving, a code/preview mode, and the ability to export notes to PDF or Microsoft Word.
 
 ## Getting Started
 
