@@ -1,0 +1,7 @@
+{
+  "name": "SampleReporter",
+  "button_text": "Sample Reporter",
+  "description": "A sample plugin to demonstrate web panel integration.",
+  "module": "plugin",
+  "entry_point": "SampleReporterWidget"
+}

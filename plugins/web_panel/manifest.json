@@ -1,0 +1,7 @@
+{
+  "name": "WebPanel",
+  "button_text": "Web Panel Settings",
+  "description": "Configure and manage the web-based reporting and management panel.",
+  "module": "plugin",
+  "entry_point": "WebPanelWidget"
+}
