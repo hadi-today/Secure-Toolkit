@@ -1,0 +1,7 @@
+{
+  "name": "FeedReader",
+  "button_text": "Feed Reader",
+  "description": "A professional feed reader with archiving and workflow management.",
+  "module": "plugin",
+  "entry_point": "FeedReaderWidget"
+}

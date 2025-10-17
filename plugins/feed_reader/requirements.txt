@@ -1,0 +1,6 @@
+feedparser
+cloudscraper
+PyQt6-WebEngine
+pytz
+python-dateutil
+curl-cffi
