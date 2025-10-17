@@ -1,0 +1,7 @@
+{
+  "name": "SecureTextEditor",
+  "button_text": "Secure Editor",
+  "description": "An encrypted, version-controlled text editor with advanced security features.",
+  "module": "plugin_main",
+  "entry_point": "SecureEditorWidget"
+}

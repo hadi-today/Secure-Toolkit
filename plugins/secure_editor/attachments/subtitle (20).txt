@@ -1,0 +1,70 @@
+When you're presented with a problem,
+you most likely evaluate it and begin to strategize how
+you're going to solve it. Do you have a good idea
+of what the problem is? Do you break the problem down into smaller
+pieces and make it easier to manage? Or is the problem unclear and do you need
+to gather more information before you can have a better idea of the situation? The answers to these questions help you
+decide whether to take a top-down or bottom-up approach to solving the problem. Developers can use these approaches
+when developing and debugging software. In this video, we'll compare and contrast
+the top-down and bottom-up approaches. The top-down approach is a method of
+problem-solving that begins with a broad overview of a problem and breaks it down
+into smaller, more manageable parts. The top-down approach is useful when you
+have a clear overview of a problem, but need to break it down to gain further
+insights and make it easier to manage. Let's now explore some of the benefits and
+limitations of this approach. One benefit of the top-down approach is
+that you can address the problem in small, focused tasks. This in turn facilitates a deeper
+understanding of the major areas of the issue. Additionally, it can foster collaboration
+by enabling a team to work on individual parts of the problem. However, despite these benefits, the top-down
+approach can sometimes limit problem- solving because it requires the developer
+to have a clear understanding of the high level problem at the start. Without this, the developer may be unable
+to break the problem down accurately. Furthermore, because the parts
+are dependent on the problem definition, the approach can be rigid and lack flexibility once
+the developer defines the problem. The top-down approach helps developers
+move from a big idea to specific tasks when developing software,
+but it's not always ideal. Sometimes developers need to gather
+more information when debugging or take a modular approach
+to software development. In these cases, they may prefer the bottom-up
+approach to solving the problem. The bottom-up approach is a method of
+problem-solving that begins with small, manageable parts and
+combines them to create a broad composite. The bottom-up approach benefits developers
+because it enables them to explore problems or begin development without having
+a lot of information from the start. It's an exploratory approach to
+solving problems in development, which makes it very flexible as
+the developer can experiment and try new ways of doing things. It also enables the developer
+to scale their research and development efforts as needed. While the developer may have
+a development goal or problem definition, they're not constrained by a rigid
+direction at the beginning of the process. The exploratory nature of the bottom-up
+approach offers many benefits, but there are some limitations
+to consider as well. For example, because there's not a clear
+problem definition at the start, this approach can be unwieldy, leading the
+developer in unsuccessful directions and wasting their time. Additionally, developers may not
+know when to stop their research or development efforts,
+making the approach unconstrained. Whether the developer should use the top-down
+or bottom-up approach depends on the type of problem that they need
+to solve, available resources and their objective. Answering a series of
+questions can help the developer or their team decide on which
+approach may be more appropriate. The first question to ask
+is whether the problem or development goal is clearly defined. If it is, a top-down approach
+may be more appropriate. Otherwise, the developer may take a bottom-up
+approach in order to gather more information or start developing code. The second question the developer
+should ask is whether the problem or project needs to focus on the specifics or
+the overall goal. They need to decide which takes priority. For example, if the developer needs to
+create a new encryption algorithm that requires careful attention but is not
+focused on where in the application will be used,
+they may take a bottom-up approach. In contrast, if the developer is
+attempting to address a recurring crash on a critical system, breaking
+the problem down to find the issue quickly may require a top-down approach
+since the problem is well-defined. Finally, the third question the developer
+should consider is whether they're resource-constrained or if time, money and
+people resources are more flexible. A startup that has no deadline
+to meet on a new project and wants to explore all its options
+may take a bottom-up approach so it can have the maximum amount
+of flexibility and scale. In contrast, a business that is working on
+a deadline with a limited budget may need to take a top-down approach with a clearly
+defined goal in order to stay within its resource-constraints. Use the top-down approach when you
+need a clear overall structure from the beginning, while the bottom-up
+approach is best when the project involves developing intricate components with a
+need for detailed testing and validation, or the problem information is unclear and
+you need more information. In this video, you compared and contrasted
+the top-down and bottom-up approaches. Understanding the strengths and weaknesses
+of both approaches allows you to choose the best method for your project.

@@ -1,0 +1,8 @@
+{
+  "display_name": "Sample Reporter",
+  "blueprint_module": "panel.routes",
+  "blueprint_name": "reporter_bp",
+  "icon": "fa-chart-bar",
+  "gadgets_module": "panel.gadgets",
+  "gadgets_factory": "provide_gadgets"
+}

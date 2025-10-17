@@ -1,0 +1,8 @@
+{
+  "display_name": "Secure Editor",
+  "icon": "fa-file-alt",
+  "blueprint_module": "panel.routes",
+  "blueprint_name": "secure_editor_bp",
+  "gadgets_module": "panel.gadgets",
+  "gadgets_factory": "provide_gadgets"
+}

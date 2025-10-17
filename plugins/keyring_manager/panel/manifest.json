@@ -1,0 +1,8 @@
+{
+  "display_name": "Keyring Manager",
+  "icon": "fa-key",
+  "blueprint_module": "panel.routes",
+  "blueprint_name": "keyring_bp",
+  "gadgets_module": "panel.gadgets",
+  "gadgets_factory": "provide_gadgets"
+}
