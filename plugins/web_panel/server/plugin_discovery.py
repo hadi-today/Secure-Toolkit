@@ -1,16 +1,19 @@
-# plugins/web_panel/server/plugin_discovery.py
-
-import os
-import json
 import importlib
+import json
 import logging
+import os
 
-PLUGINS_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+PLUGINS_ROOT_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..')
+)
+
 
 def discover_plugins():
+    """Scan installed plugins and load their web blueprints."""
 
     discovered = []
-    logging.info(f"Scanning for plugins in: {PLUGINS_ROOT_DIR}")
+    logging.info('Scanning for plugins in: %s', PLUGINS_ROOT_DIR)
 
     for plugin_name in os.listdir(PLUGINS_ROOT_DIR):
         plugin_path = os.path.join(PLUGINS_ROOT_DIR, plugin_name)
@@ -20,8 +23,8 @@ def discover_plugins():
             continue
 
         try:
-            with open(panel_manifest_path, 'r') as f:
-                manifest = json.load(f)
+            with open(panel_manifest_path, 'r', encoding='utf-8') as manifest_file:
+                manifest = json.load(manifest_file)
 
             module_path = f"plugins.{plugin_name}.{manifest['blueprint_module']}"
             module = importlib.import_module(module_path)
@@ -49,15 +52,17 @@ def discover_plugins():
                         gadget_error,
                     )
 
-            discovered.append({
-                "name": plugin_name,
-                "manifest": manifest,
-                "blueprint": blueprint,
-                "gadgets_provider": gadgets_provider,
-            })
-            logging.info(f"Successfully discovered web plugin: {plugin_name}")
+            discovered.append(
+                {
+                    'name': plugin_name,
+                    'manifest': manifest,
+                    'blueprint': blueprint,
+                    'gadgets_provider': gadgets_provider,
+                }
+            )
+            logging.info('Successfully discovered web plugin: %s', plugin_name)
 
-        except (json.JSONDecodeError, KeyError, ImportError, AttributeError) as e:
-            logging.error(f"Failed to load web plugin '{plugin_name}': {e}")
-            
+        except (json.JSONDecodeError, KeyError, ImportError, AttributeError) as error:
+            logging.error("Failed to load web plugin '%s': %s", plugin_name, error)
+
     return discovered

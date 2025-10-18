@@ -1,4 +1,4 @@
-# plugins/secure_editor/editor_modules/editor_logic.py
+# مسیر: plugins/secure_editor/editor_modules/editor_logic.py
 
 import os
 import shutil
@@ -43,6 +43,7 @@ class EditorLogic:
         word_count = len(plain_text.split()) if plain_text else 0
         self.ui.word_count_label.setText(f"Words: {word_count}")
     def on_code_changed(self):
+        """وقتی محتوای ویرایشگر کد تغییر می‌کند، این متد فراخوانی می‌شود."""
         self.content_changed = True
 
     def get_key_from_keyring(self, key_name, key_type='private'):
@@ -53,6 +54,7 @@ class EditorLogic:
 
     def save_note(self, is_autosave=False):
         if self.is_code_view:
+            # اگر در حالت کد هستیم، اول محتوای پیش‌نمایش را به‌روز کن
             self.ui.text_edit.setHtml(self.ui.code_edit.toPlainText())
         if not self.content_changed and is_autosave:
             return
@@ -179,6 +181,7 @@ class EditorLogic:
         QMessageBox.information(self.main_widget, "WIP", "Search is work in progress.")
         
     def create_list(self, style):
+        """یک لیست نقطه‌ای یا شماره‌ای ایجاد می‌کند."""
         cursor = self.ui.text_edit.textCursor()
         list_format = QTextListFormat()
         if style == 'bullet':
@@ -189,20 +192,29 @@ class EditorLogic:
         cursor.createList(list_format)
 
     def _update_format_toolbar(self):
+        """وضعیت دکمه‌های نوار ابزار را بر اساس فرمت متن زیر مکان‌نما به‌روز می‌کند."""
+        # فونت
         font = self.ui.text_edit.currentFont()
         self.ui.font_combo.setCurrentFont(font)
         self.ui.font_size_combo.setCurrentText(str(int(font.pointSize())))
 
+        # استایل‌ها
         self.ui.bold_action.setChecked(font.bold())
         self.ui.italic_action.setChecked(font.italic())
         self.ui.underline_action.setChecked(font.underline())
     def set_text_direction(self, direction):
+        """جهت نوشتاری پاراگراف فعلی را تنظیم می‌کند (LTR or RTL)."""
         cursor = self.ui.text_edit.textCursor()
+        # یک فرمت بلاک جدید می‌سازیم تا فقط جهت را تغییر دهیم
         block_format = QTextBlockFormat()
         block_format.setLayoutDirection(direction)
+        # فرمت جدید را با فرمت فعلی بلاک ادغام می‌کنیم تا بقیه تنظیمات از بین نرود
         cursor.mergeBlockFormat(block_format)
+        # مکان‌نما را دوباره تنظیم می‌کنیم تا تغییر اعمال شود
         self.ui.text_edit.setTextCursor(cursor)
     def insert_link(self):
+        """دیالوگ درج لینک را باز کرده و یک هایپرلینک در موقعیت صحیح مکان‌نما قرار می‌دهد."""
+        # 1. اول موقعیت فعلی مکان‌نما را ذخیره می‌کنیم
         cursor = self.ui.text_edit.textCursor()
         selected_text = cursor.selectedText()
         
@@ -215,10 +227,13 @@ class EditorLogic:
 
         url, ok = QInputDialog.getText(self.main_widget, "Insert Link", "URL:", text="https://")
         if ok and url:
+            # 2. از همان مکان‌نمای ذخیره شده برای درج استفاده می‌کنیم
             html = f'<a href="{url}">{link_text}</a>'
             cursor.insertHtml(html)
 
     def insert_image(self):
+        """دیالوگ انتخاب تصویر را باز کرده و تصویر را در موقعیت صحیح مکان‌نما قرار می‌دهد."""
+        # 1. اول موقعیت فعلی مکان‌نما را ذخیره می‌کنیم
         cursor = self.ui.text_edit.textCursor()
 
         path, _ = QFileDialog.getOpenFileName(self.main_widget, "Insert Image", "", 
@@ -233,12 +248,15 @@ class EditorLogic:
                 mime_type = f"image/{ext}"
 
                 html = f'<img src="data:{mime_type};base64,{b64_data}" width="300" />'
+                # 2. از همان مکان‌نمای ذخیره شده برای درج استفاده می‌کنیم
                 cursor.insertHtml(html)
                 self.ui.status_bar.showMessage("Image inserted.", 3000)
             except Exception as e:
                 QMessageBox.critical(self.main_widget, "Error", f"Could not insert image: {e}")
 
     def insert_file(self):
+        """یک فایل را ضمیمه کرده و لینکی به آن را در موقعیت صحیح مکان‌نما ایجاد می‌کند."""
+        # 1. اول موقعیت فعلی مکان‌نما را ذخیره می‌کنیم
         cursor = self.ui.text_edit.textCursor()
 
         source_path, _ = QFileDialog.getOpenFileName(self.main_widget, "Attach File", "")
@@ -253,30 +271,40 @@ class EditorLogic:
             
             file_url = Path(dest_path).as_uri()
             html = f'📎 <a href="{file_url}">{filename}</a>'
+            # 2. از همان مکان‌نمای ذخیره شده برای درج استفاده می‌کنیم
             cursor.insertHtml(html)
             self.ui.status_bar.showMessage(f"File '{filename}' attached.", 3000)
         except Exception as e:
             QMessageBox.critical(self.main_widget, "Error", f"Could not attach file: {e}")
     def toggle_editor_view(self):
         if not self.is_code_view:
+            # --- رفتن به حالت کد ---
+            # محتوای ویرایشگر پیش‌نمایش را به ویرایشگر کد منتقل کن
             html_content = self.ui.text_edit.toHtml()
             self.ui.code_edit.setPlainText(html_content)
             
+            # ویجت کد را نمایش بده
             self.ui.editor_stack.setCurrentIndex(1)
             self.ui.toggle_view_button.setText("Show Preview")
             
+            # نوار ابزار قالب‌بندی را غیرفعال کن چون در حالت کد کاربردی ندارد
             self.ui.format_toolbar.setEnabled(False)
             self.is_code_view = True
         else:
+            # --- بازگشت به حالت پیش‌نمایش ---
+            # محتوای ویرایشگر کد را به ویرایشگر پیش‌نمایش منتقل کن
             code_content = self.ui.code_edit.toPlainText()
             self.ui.text_edit.setHtml(code_content)
 
+            # ویجت پیش‌نمایش را نمایش بده
             self.ui.editor_stack.setCurrentIndex(0)
             self.ui.toggle_view_button.setText("Show Code")
 
+            # نوار ابزار قالب‌بندی را دوباره فعال کن
             self.ui.format_toolbar.setEnabled(True)
             self.is_code_view = False
     def handle_link_clicked(self, url: QUrl):
+        """هر زمان روی لینکی کلیک شود، این متد فراخوانی می‌شود."""
         scheme = url.scheme()
         
         if scheme == 'attachment':
@@ -284,10 +312,12 @@ class EditorLogic:
             file_path = os.path.join(self.attachments_dir, filename)
             
             if os.path.exists(file_path):
+                # از سیستم عامل می‌خواهد فایل را با برنامه پیش‌فرض باز کند
                 QDesktopServices.openUrl(QUrl.fromLocalFile(file_path))
             else:
                 QMessageBox.warning(self.main_widget, "File Not Found", 
                                     f"The attached file '{filename}' could not be found.")
         
         elif scheme in ['http', 'https']:
+            # لینک‌های وب را در مرورگر باز می‌کند
             QDesktopServices.openUrl(url)

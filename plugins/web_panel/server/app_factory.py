@@ -1,26 +1,25 @@
-# plugins/web_panel/server/app_factory.py
-
 from flask import Flask
 
 from .config import DATABASE_URI, SECRET_KEY
 from .database import init_app_db
 from .plugin_discovery import discover_plugins
-from .routes_main import main_pages_bp
 from .routes_auth import auth_bp
-from .routes_lists import lists_bp
-from .routes_items import items_bp
 from .routes_core import core_bp
+from .routes_items import items_bp
+from .routes_lists import lists_bp
+from .routes_main import main_pages_bp
+
 
 def create_app(password_verifier=None):
     app = Flask(__name__, static_folder='static', template_folder='templates')
-    
+
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = SECRET_KEY
     app.config['PASSWORD_VERIFIER'] = password_verifier
 
     init_app_db(app)
-    
+
     discovered_plugins = discover_plugins()
     plugins_frontend_info = []
     gadgets_catalog = []
@@ -31,15 +30,17 @@ def create_app(password_verifier=None):
         blueprint = plugin['blueprint']
         gadgets_provider = plugin.get('gadgets_provider')
 
-        url_prefix = f"/plugins/{plugin_name}"
+        url_prefix = f'/plugins/{plugin_name}'
         app.register_blueprint(blueprint, url_prefix=url_prefix)
 
-        plugins_frontend_info.append({
-            "name": plugin_name,
-            "display_name": manifest.get('display_name', plugin_name),
-            "icon": manifest.get('icon', 'fa-question-circle'),
-            "base_path": url_prefix
-        })
+        plugins_frontend_info.append(
+            {
+                'name': plugin_name,
+                'display_name': manifest.get('display_name', plugin_name),
+                'icon': manifest.get('icon', 'fa-question-circle'),
+                'base_path': url_prefix,
+            }
+        )
 
         if callable(gadgets_provider):
             try:
@@ -64,13 +65,13 @@ def create_app(password_verifier=None):
                         continue
 
                     normalized = {
-                        "id": gadget.get('id') or f"{plugin_name}-gadget-{index}",
-                        "plugin": plugin_name,
-                        "title": title,
-                        "description": gadget.get('description', ''),
-                        "content_html": content_html,
-                        "download": gadget.get('download'),
-                        "order": gadget.get('order', index),
+                        'id': gadget.get('id') or f'{plugin_name}-gadget-{index}',
+                        'plugin': plugin_name,
+                        'title': title,
+                        'description': gadget.get('description', ''),
+                        'content_html': content_html,
+                        'download': gadget.get('download'),
+                        'order': gadget.get('order', index),
                     }
                     gadgets_catalog.append(normalized)
 

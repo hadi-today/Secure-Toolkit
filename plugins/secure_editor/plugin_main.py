@@ -1,9 +1,10 @@
-# plugins/secure_editor/plugin_main.py
+# مسیر: plugins/secure_editor/plugin_main.py
 
 from PyQt6.QtWidgets import QWidget
-from PyQt6.QtCore import Qt      
-from PyQt6.QtGui import QFont    
+from PyQt6.QtCore import Qt      # <<-- ایمپورت ضروری اضافه شد
+from PyQt6.QtGui import QFont    # <<-- ایمپورت ضروری اضافه شد
 
+# --- ایمپورت‌های ماژول‌های داخلی ---
 from .editor_modules.database_manager import DatabaseManager
 from .editor_modules.editor_logic import EditorLogic
 from .editor_modules.ui_setup import MainWindowUI
@@ -24,22 +25,31 @@ class SecureEditorWidget(QWidget):
         
         self.ui.status_bar.showMessage("Ready. Load or create a new note to begin.")
 
+    # مسیر: plugins/secure_editor/plugin_main.py
+# در کلاس SecureEditorWidget، این متد را جایگزین کنید:
 
     def _connect_signals(self):
+        """اتصال سیگنال‌های UI به توابع کنترل‌کننده منطق."""
+        
+        # === نوار ابزار اصلی ===
         self.ui.save_action.triggered.connect(self.logic.save_note)
         self.ui.load_action.triggered.connect(self.logic.load_note) 
         self.ui.manage_action.triggered.connect(self.logic.manage_notes)
         self.ui.search_action.triggered.connect(self.logic.search_notes)
         self.ui.toggle_view_button.clicked.connect(self.logic.toggle_editor_view)
         
-
+        # === ویرایشگرها ===
+        # پیش‌نمایش (Rich Text)
         self.ui.text_edit.textChanged.connect(self.logic.on_text_changed)
         self.ui.text_edit.textChanged.connect(self.autosave_manager.on_activity)
         self.ui.text_edit.cursorPositionChanged.connect(self.logic._update_format_toolbar)
+        # اصلاح: استفاده از سیگنال سفارشی و صحیح linkClicked
         self.ui.text_edit.linkClicked.connect(self.logic.handle_link_clicked)
         
+        # کد (Plain Text)
         self.ui.code_edit.textChanged.connect(self.logic.on_code_changed)
 
+        # === نوار ابزار قالب‌بندی ===
         self.ui.font_combo.currentFontChanged.connect(self.ui.text_edit.setCurrentFont)
         self.ui.font_size_combo.currentTextChanged.connect(lambda size: self.ui.text_edit.setFontPointSize(float(size)))
         self.ui.bold_action.triggered.connect(lambda checked: self.ui.text_edit.setFontWeight(QFont.Weight.Bold if checked else QFont.Weight.Normal))
@@ -56,14 +66,17 @@ class SecureEditorWidget(QWidget):
         self.ui.image_action.triggered.connect(self.logic.insert_image)
         self.ui.file_action.triggered.connect(self.logic.insert_file)
         
+        # === نوار پایین ===
         self.ui.export_pdf_button.clicked.connect(self.logic.export_to_pdf)
         self.ui.export_word_button.clicked.connect(self.logic.export_to_word)
         self.ui.theme_button.clicked.connect(self.logic.toggle_theme)
 
+        # === ویژگی‌های پس‌زمینه ===
         self.autosave_manager.request_autosave.connect(
             lambda: self.logic.save_note(is_autosave=True)
         )
     def closeEvent(self, event):
+        """توقف کامل تسک‌های پس‌زمینه و بستن اتصالات."""
         print("[Main] Stopping tasks and closing connections.")
         self.autosave_manager.stop()
         self.db_manager.close()

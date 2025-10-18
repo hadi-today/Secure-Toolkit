@@ -1,7 +1,0 @@
-{
-  "name": "ImageManager",
-  "button_text": "Image Archive",
-  "description": "A professional Digital Asset Management (DAM) plugin for your personal image archive.",
-  "module": "plugin",
-  "entry_point": "ImageManagerWidget"
-}
