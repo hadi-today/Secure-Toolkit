@@ -1,70 +1,72 @@
-# Secure Toolkit v1.0
+# Secure Toolkit v1.1
 
 
+Secure Toolkit is a modular desktop suite built with Python and PyQt6 for secure key
+management, encrypted document workflows, and everyday cryptography. Launch any tool
+from a single hub, keep secrets protected with a master password, and extend the
+experience with custom plugins.
 
-A modular and secure desktop application built with Python and PyQt6 for performing various cryptographic operations. This toolkit provides a user-friendly graphical interface for managing cryptographic keys, encrypting/decrypting files, creating digital signatures, and securing text messages.
+## What’s new in v1.1
 
-## Features
+- **Dedicated plugin windows** keep each workflow focused while exposing real-time
+  service status.
+- **Revamped in-app copy** clarifies guidance and task flows throughout the suite.
+- **At-a-glance key and notes summaries** highlight key health and version history
+  before you open a module.
+- **Unified launcher bootstrap** eliminates layout collisions and stabilizes startup
+  across platforms.
 
-This application features a powerful plugin-based architecture, allowing for easy expansion and addition of new security tools. The current version includes:
+## Core features
 
-*   **Secure Core**: The application is protected by a master password. All sensitive data, including the user's private keys, is stored in an encrypted format on disk using AES-GCM.
-*   **Keyring Manager**: A comprehensive tool to generate, import, and manage personal RSA key pairs and the public keys of contacts.
-*   **File Encryptor**: An advanced tool for file encryption and decryption that supports:
-    *   **Symmetric Encryption**: Using a strong password (AES-256).
-    *   **Asymmetric (Hybrid) Encryption**: Using RSA public keys from the keyring.
-    *   **Encrypted Filenames**: The original filename is encrypted and stored within the output file to protect metadata.
-    *   **File Chunking**: Ability to encrypt and split very large files into smaller, manageable parts, with integrity checks via a `manifest.json` file.
-*   **Digital Signature Tool**: A standard tool to create and verify digital signatures for files, ensuring authenticity and integrity.
-*   **Secure Text Tool**: A quick and easy utility to encrypt, decrypt, and manage short text snippets for secure communication over insecure channels.
-*   **Internal Tools**: Includes plugins to securely change the master password.
-*   **Secure Editor**: A powerful, encrypted note-taking tool with built-in version control. This editor functions like a secure personal wiki, allowing you to create rich-text notes with formatting, images, and attachments. Every version of a note is encrypted with a key from your keyring and saved securely. Features include autosaving, a code/preview mode, and the ability to export notes to PDF or Microsoft Word.
+- **Secure core** backed by an AES-GCM vault locked by the master password.
+- **Key manager** for generating, importing, and organizing RSA key pairs and trusted
+  public keys.
+- **File encryptor** supporting symmetric (password) and hybrid (RSA) encryption plus
+  filename protection and chunked uploads.
+- **Digital signature tool** to sign files and verify integrity and authenticity.
+- **Secure text tool** for quick encrypt/decrypt/sign/verify cycles in a streamlined
+  editor.
+- **Versioned secure editor** with key-aware context and master-password access
+  controls.
+- **Web panel plugin** to monitor remote services, perform secure logins, and view
+  dashboards.
+- **Sample plugin scaffold** demonstrating how to build responsive web-powered
+  extensions.
 
-## Getting Started
-
-These instructions will get you a copy of the project up and running on your local machine.
+## Quick start
 
 ### Prerequisites
+- Python 3.8 or later
+- `pip` package manager
 
-*   Python 3.8 or higher
-*   pip (Python package installer)
+### Installation and launch
 
-### Installation & Running
+1. Clone the repository:
+   ```bash
+   git clone [your-repository-url]
+   cd secure-toolkit
+   ```
+2. Run `launcher.py` to create a virtual environment, install dependencies, and
+   launch the app:
+   ```bash
+   python3 launcher.py
+   ```
+   On Windows:
+   ```bash
+   python launcher.py
+   ```
+3. On first run, define the master password. It encrypts every sensitive item and
+   cannot be recovered, so store it securely.
 
-The application is designed to be self-contained and easy to run. It uses a smart launcher that automatically creates a virtual environment and installs all necessary dependencies.
+## Technology stack
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/hadi-today/Secure-Toolkit
-    cd secure-toolkit
-    ```
+- **Python 3** for application logic
+- **PyQt6** for the desktop UI
+- **cryptography** for encryption and signature primitives
 
-2.  **Run the launcher:**
-    The `launcher.py` script handles everything. On its first run, it will:
-    a. Create a local Python virtual environment in a `venv` folder.
-    b. Install all required packages (like PyQt6 and cryptography) from `requirements.txt` into this environment.
-    c. Launch the main application.
+## Project architecture
 
-    To run the application, simply execute:
-    ```bash
-    python3 launcher.py
-    ```
-    or on Windows:
-    ```bash
-    python launcher.py
-    ```
-
-3.  **First-time Setup:**
-    On the first run, the application will prompt you to create a strong master password. This password is used to encrypt your keyring and secure the entire application. **Do not forget this password, as there is no way to recover it.**
-
-## Built With
-
-*   **Python 3**: The core programming language.
-*   **PyQt6**: For the graphical user interface.
-*   **Cryptography**: A powerful library for all cryptographic primitives (AES, RSA, etc.).
-
-## Project Architecture
-
-The application is built on a plugin-based architecture. The `main.py` file acts as a core controller that discovers and loads plugins from the `plugins/` directory. Each plugin is a self-contained module with its own UI (`plugin.py`) and a `manifest.json` file that describes it to the core application.
-
-This design allows for easy maintenance and the addition of new features without modifying the core codebase.
+The launcher discovers plugins from the `plugins/` directory. Each plugin provides a
+module (`plugin.py`) and a `manifest.json` that describe its entry point and metadata.
+This separation keeps the core lightweight, encourages new capabilities, and simplifies
+maintenance without touching the central logic in `main.py`.
