@@ -47,3 +47,4 @@ def delete_list(list_id):
     db.session.delete(managed_list)
     db.session.commit()
     return '', 204
+

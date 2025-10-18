@@ -16,3 +16,4 @@ def dashboard_page():
     """Serve the dashboard shell that loads plugin content."""
 
     return render_template('dashboard.html')
+

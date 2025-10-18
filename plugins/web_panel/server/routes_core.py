@@ -22,3 +22,4 @@ def get_registered_gadgets():
 
     gadgets = current_app.config.get('GADGETS_CATALOG', [])
     return jsonify(gadgets)
+

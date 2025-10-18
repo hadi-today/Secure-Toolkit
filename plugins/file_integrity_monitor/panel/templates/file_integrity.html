@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Integrity Monitor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhisnx1LZ9erjRzCQXDutUe1koXSPo6e7zu+730Gpzt7H3H9u2O3V0CPthe5LR9QQg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="{{ url_for('file_integrity_panel.static', filename='panel.css') }}">
+</head>
+<body data-status-url="{{ url_for('file_integrity_panel.api_status') }}" data-ack-url="{{ url_for('file_integrity_panel.api_acknowledge') }}">
+    <div class="fim-container">
+        <header class="panel-header">
+            <div>
+                <h1><i class="fa-solid fa-shield"></i> File Integrity Monitor</h1>
+                <p class="subtitle">Review monitored folders, confirm baseline health, and inspect recent scan activity from the desktop agent.</p>
+            </div>
+            <div id="baseline-chip" class="status-chip">Checking…</div>
+        </header>
+
+        <section class="status-section" aria-label="Current configuration">
+            <div class="status-card">
+                <h2><i class="fa-solid fa-folder-tree"></i> Monitored folders</h2>
+                <ul id="directories-list" class="directories-list"></ul>
+                <p id="directories-empty" class="empty-state">No folders are being monitored yet.</p>
+            </div>
+            <div class="status-card">
+                <h2><i class="fa-solid fa-clock"></i> Scan settings</h2>
+                <dl class="status-grid">
+                    <div>
+                        <dt>Automatic scans</dt>
+                        <dd id="auto-scan">—</dd>
+                    </div>
+                    <div>
+                        <dt>Interval</dt>
+                        <dd id="scan-interval">—</dd>
+                    </div>
+                    <div>
+                        <dt>Baseline captured</dt>
+                        <dd id="baseline-time">—</dd>
+                    </div>
+                    <div>
+                        <dt>Tracked files</dt>
+                        <dd id="baseline-count">0</dd>
+                    </div>
+                </dl>
+                <p class="generated-at">Last updated <span id="generated-at">—</span></p>
+            </div>
+        </section>
+
+        <section class="status-card" aria-label="Latest scan summary">
+            <h2><i class="fa-solid fa-chart-simple"></i> Latest scan</h2>
+            <p id="last-scan-message" class="last-scan">No scans have been recorded yet.</p>
+            <dl class="summary-grid">
+                <div>
+                    <dt>Trigger</dt>
+                    <dd id="last-scan-trigger">—</dd>
+                </div>
+                <div>
+                    <dt>Changed</dt>
+                    <dd id="last-scan-changed">0</dd>
+                </div>
+                <div>
+                    <dt>Deleted</dt>
+                    <dd id="last-scan-deleted">0</dd>
+                </div>
+                <div>
+                    <dt>New</dt>
+                    <dd id="last-scan-new">0</dd>
+                </div>
+            </dl>
+            <div class="ack-row">
+                <button id="acknowledge-button" class="primary-button" disabled><i class="fa-solid fa-check"></i> Acknowledge changes</button>
+                <span id="acknowledge-status" class="ack-status"></span>
+            </div>
+        </section>
+
+        <section class="table-section" aria-label="Recent scan history">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-list-check"></i> Scan history</h2>
+                <p class="section-subtitle">Newest entries appear first. A rolling window of the last 50 scans is retained.</p>
+            </div>
+            <div class="table-wrapper">
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Run at</th>
+                            <th scope="col">Trigger</th>
+                            <th scope="col">Changed</th>
+                            <th scope="col">Deleted</th>
+                            <th scope="col">New</th>
+                            <th scope="col">Message</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="history-empty" class="empty-state">No scans have been recorded yet.</p>
+            </div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('file_integrity_panel.static', filename='panel.js') }}" defer></script>
+</body>
+</html>

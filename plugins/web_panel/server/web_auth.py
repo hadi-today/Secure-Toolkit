@@ -117,3 +117,4 @@ def token_required(view_function):
         return view_function(*args, **kwargs)
 
     return decorated
+

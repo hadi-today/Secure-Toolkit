@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +7,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('keyring_manager_panel.static', filename='keyring.css') }}">
 </head>
-
 <body>
     <main class="keyring-page" aria-live="polite">
         <header class="keyring-header">
@@ -47,8 +45,7 @@
                 </div>
                 <div class="form-field">
                     <label for="contact-key">Public key</label>
-                    <textarea id="contact-key" name="contact-key" rows="6" placeholder="-----BEGIN PUBLIC KEY-----"
-                        required></textarea>
+                    <textarea id="contact-key" name="contact-key" rows="6" placeholder="-----BEGIN PUBLIC KEY-----" required></textarea>
                 </div>
                 <button type="submit" class="primary-button"><i class="fas fa-plus"></i> Save contact key</button>
             </form>
@@ -59,5 +56,4 @@
 
     <script src="{{ url_for('keyring_manager_panel.static', filename='keyring.js') }}" defer></script>
 </body>
-
 </html>

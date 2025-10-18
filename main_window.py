@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QMenuBar,
     QApplication,
+    QGridLayout,
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QIcon, QAction
@@ -25,23 +26,46 @@ class MainWindow(QWidget):
         self.active_plugins = []
         self.status_plugins = {}
         self.setWindowTitle('Security Toolkit')
-        self.setGeometry(300, 300, 400, 350)
+        self.setGeometry(150, 150, 1180, 760)
+        self.setMinimumSize(1080, 680)
         icon_path = os.path.join(os.path.dirname(__file__), 'icon.png')
         print(f"[*] Attempting to load icon from path: {icon_path}")
         print(f"[*] Does the icon file exist at this path? {os.path.exists(icon_path)}")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         self.main_layout = QVBoxLayout(self)
-        self.main_layout.setContentsMargins(0, 0, 0, 0)
-        self.main_layout.setSpacing(0)
+        self.main_layout.setContentsMargins(24, 24, 24, 24)
+        self.main_layout.setSpacing(18)
         self._create_menu_bar()
         self.content_widget = QWidget()
+        self.content_widget.setObjectName('ContentCard')
         self.content_layout = QVBoxLayout(self.content_widget)
+        self.content_layout.setContentsMargins(24, 24, 24, 24)
+        self.content_layout.setSpacing(18)
         self.content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.content_layout.setContentsMargins(32, 24, 32, 24)
+        self.content_layout.setSpacing(20)
         title = QLabel('Available Tools:')
-        title.setStyleSheet('font-size: 16px; font-weight: bold; margin-bottom: 10px;')
+        title.setStyleSheet(
+            'font-size: 24px; font-weight: 600; margin-bottom: 8px; letter-spacing: 0.3px;'
+        )
         self.content_layout.addWidget(title)
+
+        subtitle = QLabel('Choose a plugin card below to launch the desired toolkit feature.')
+        subtitle.setStyleSheet('font-size: 14px; color: #9ca3af; margin-bottom: 16px;')
+        subtitle.setWordWrap(True)
+        self.content_layout.addWidget(subtitle)
         self.main_layout.addWidget(self.content_widget)
+        self.plugin_grid_widget = QWidget(self.content_widget)
+        self.plugin_grid_layout = QGridLayout(self.plugin_grid_widget)
+        self.plugin_grid_layout.setContentsMargins(0, 0, 0, 0)
+        self.plugin_grid_layout.setHorizontalSpacing(18)
+        self.plugin_grid_layout.setVerticalSpacing(18)
+        self.plugin_grid_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.content_layout.addWidget(self.plugin_grid_widget)
+        self.plugin_grid_columns = 3
+        for column in range(self.plugin_grid_columns):
+            self.plugin_grid_layout.setColumnStretch(column, 1)
         self._load_plugins()
         self.status_timer = QTimer(self)
         self.status_timer.timeout.connect(self.update_all_statuses)
@@ -69,13 +93,17 @@ class MainWindow(QWidget):
         dialog.exec()
 
     def _load_plugins(self):
-        for plugin_folder_name, manifest in discover_manifests(PLUGINS_DIR):
+        for index, (plugin_folder_name, manifest) in enumerate(
+            discover_manifests(PLUGINS_DIR)
+        ):
             add_plugin_entry(
-                self.content_layout,
+                self.plugin_grid_layout,
                 self.status_plugins,
                 manifest,
                 plugin_folder_name,
                 self.launch_plugin,
+                index,
+                self.plugin_grid_columns,
             )
 
     def update_all_statuses(self):
@@ -88,7 +116,7 @@ class MainWindow(QWidget):
             except Exception as error:
                 print(f"Failed to update status for '{name}': {error}")
                 indicator = data['indicator']
-                indicator.setStyleSheet('background-color: grey; border-radius: 8px;')
+                indicator.setStyleSheet('background-color: grey; border-radius: 7px;')
 
     def closeEvent(self, event):
         print('Main window closing. Stopping all background services...')

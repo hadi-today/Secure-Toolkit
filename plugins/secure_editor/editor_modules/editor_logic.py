@@ -1,20 +1,19 @@
-# مسیر: plugins/secure_editor/editor_modules/editor_logic.py
+"""Application logic for the Secure Editor plugin."""
 
+import base64
 import os
 import shutil
-import base64
-from pathlib import Path
 from datetime import datetime
-from PyQt6.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QApplication
-from PyQt6.QtPrintSupport import QPrinter
-from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtGui import QFont, QTextListFormat, QTextBlockFormat, QDesktopServices
-from . import config
-# --- ایمپورت‌های مطلق و نهایی ---
-from plugins.secure_editor.editor_modules.crypto_manager import encrypt_content, decrypt_content
-from plugins.secure_editor.editor_modules.dialogs import SelectKeyDialog, get_passphrase
+from pathlib import Path
 
-from PyQt6.QtGui import QFont, QTextListFormat, QTextBlockFormat
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QDesktopServices, QTextBlockFormat, QTextListFormat
+from PyQt6.QtPrintSupport import QPrinter
+from PyQt6.QtWidgets import QApplication, QFileDialog, QInputDialog, QMessageBox
+
+from . import config
+from plugins.secure_editor.editor_modules.crypto_manager import decrypt_content, encrypt_content
+from plugins.secure_editor.editor_modules.dialogs import SelectKeyDialog, get_passphrase
 
 try:
     import docx
@@ -43,7 +42,7 @@ class EditorLogic:
         word_count = len(plain_text.split()) if plain_text else 0
         self.ui.word_count_label.setText(f"Words: {word_count}")
     def on_code_changed(self):
-        """وقتی محتوای ویرایشگر کد تغییر می‌کند، این متد فراخوانی می‌شود."""
+        """Mark that the plain-text editor was modified."""
         self.content_changed = True
 
     def get_key_from_keyring(self, key_name, key_type='private'):
@@ -52,37 +51,69 @@ class EditorLogic:
                 return pair.get(f'{key_type}_key')
         return None
 
-    def save_note(self, is_autosave=False):
+    def save_note(self, is_autosave: bool = False):
+        """Persist the current note content as a new encrypted version."""
+
         if self.is_code_view:
-            # اگر در حالت کد هستیم، اول محتوای پیش‌نمایش را به‌روز کن
             self.ui.text_edit.setHtml(self.ui.code_edit.toPlainText())
+
         if not self.content_changed and is_autosave:
             return
+
         note_name = self.current_note_name
         if not is_autosave:
-            text, ok = QInputDialog.getText(self.main_widget, "Save Note", "Enter name:", text=note_name)
-            if not ok or not text.strip(): return
+            text, ok = QInputDialog.getText(
+                self.main_widget, "Save Note", "Enter name:", text=note_name
+            )
+            if not ok or not text.strip():
+                return
             note_name = text.strip()
             self.current_note_name = note_name
+
             if self.current_key_name is None:
-                keys = [k['name'] for k in self.keyring_data.get('my_key_pairs', [])]
+                keys = [k["name"] for k in self.keyring_data.get("my_key_pairs", [])]
                 if not keys:
-                    QMessageBox.critical(self.main_widget, "Error", "No key pairs found.")
+                    QMessageBox.critical(
+                        self.main_widget, "Error", "No key pairs found."
+                    )
                     return
                 dialog = SelectKeyDialog(keys, self.main_widget)
                 key = dialog.get_selected_key()
-                if not key: return
+                if not key:
+                    return
                 self.current_key_name = key
-        
-        if not self.current_key_name: return
-        pub_key = self.get_key_from_keyring(self.current_key_name, 'public')
-        bundle = encrypt_content(self.ui.text_edit.toHtml().encode('utf-8'), pub_key)
-        self.db.add_note_version(note_name, "", datetime.now().isoformat(), self.current_key_name, bundle)
-        self.content_changed = False
-        msg = f"Autosaved." if is_autosave else f"Saved."
-        self.ui.status_bar.showMessage(f"Note '{note_name}' {msg}", 4000)
-        if not is_autosave:
+
+        if not self.current_key_name:
+            return
+
+        pub_key = self.get_key_from_keyring(self.current_key_name, "public")
+        if not pub_key:
+            QMessageBox.critical(
+                self.main_widget,
+                "Missing Key",
+                f"Could not find the public key for '{self.current_key_name}'.",
+            )
+            return
+
+        bundle = encrypt_content(self.ui.text_edit.toHtml().encode("utf-8"), pub_key)
+        version_id = self.db.add_note_version(
+            note_name,
+            "",
+            datetime.now().isoformat(),
+            self.current_key_name,
+            bundle,
+        )
+
+        if self.current_note_id is None:
             self.current_note_id = self.db.get_note_id_by_name(note_name)
+
+        self.current_version_id = version_id
+        self.content_changed = False
+        msg = "Autosaved." if is_autosave else "Saved."
+        self.ui.status_bar.showMessage(f"Note '{note_name}' {msg}", 4000)
+        self.main_widget.refresh_overview_panel(
+            self.current_note_id, self.current_version_id
+        )
 
     def load_note(self):
         print("--- DEBUG: 1. Starting load_note process... ---")
@@ -120,34 +151,71 @@ class EditorLogic:
         
         print(f"--- DEBUG: 5. User selected version: {ts} ---")
         v_id = versions[timestamps.index(ts)]['id']
-        bundle = self.db.get_version_bundle(v_id)
-        key_name = bundle['encrypting_key_name']
-        priv_key = self.get_key_from_keyring(key_name, 'private')
-        
+        if self.load_note_version(note_id, v_id, note_name, ts):
+            self.main_widget.highlight_version(note_id, v_id)
+            print("--- DEBUG: 8. Load process finished successfully! ---")
+
+    def load_note_version(self, note_id, version_id, note_name=None, timestamp=None):
+        """Load and decrypt a specific note version."""
+
+        bundle = self.db.get_version_bundle(version_id)
+        if not bundle:
+            QMessageBox.critical(
+                self.main_widget,
+                "Error",
+                "Could not locate the requested note version.",
+            )
+            return False
+
+        key_name = bundle["encrypting_key_name"]
+        priv_key = self.get_key_from_keyring(key_name, "private")
+        if not priv_key:
+            QMessageBox.critical(
+                self.main_widget,
+                "Missing Key",
+                f"The private key '{key_name}' is not available in the keyring.",
+            )
+            return False
+
         pw = None
         if "ENCRYPTED" in priv_key:
             pw = get_passphrase(self.main_widget)
             if pw is None:
-                print("--- DEBUG: Private key is encrypted but user canceled passphrase input. Exiting. ---")
-                return
+                return False
 
         try:
-            print("--- DEBUG: 6. Attempting to decrypt content... ---")
             content = decrypt_content(bundle, priv_key, pw)
-            self.ui.text_edit.setHtml(content.decode('utf-8'))
-            print("--- DEBUG: 7. Decryption successful. Content set in text_edit. ---")
-            
-            if self.is_code_view:
-                print("--- DEBUG: Currently in code view, switching to preview... ---")
-                self.toggle_editor_view()
-            
-            self.current_note_id, self.current_version_id, self.current_key_name, self.current_note_name = note_id, v_id, key_name, note_name
-            self.content_changed = False
-            self.ui.status_bar.showMessage(f"Loaded '{note_name}' - {ts}", 5000)
-            print("--- DEBUG: 8. Load process finished successfully! ---")
-        except Exception as e:
-            print(f"--- DEBUG: CRITICAL ERROR during decryption: {e} ---")
-            QMessageBox.critical(self.main_widget, "Decryption Failed", f"Error: {e}")
+        except Exception as exc:
+            QMessageBox.critical(
+                self.main_widget, "Decryption Failed", f"Error: {exc}"
+            )
+            return False
+
+        self.ui.text_edit.setHtml(content.decode("utf-8"))
+        if self.is_code_view:
+            self.toggle_editor_view()
+
+        display_name = note_name or self.current_note_name or "Note"
+        timestamp_label = timestamp
+        bundle_timestamp = bundle["timestamp"] if "timestamp" in bundle.keys() else None
+        if not timestamp_label and bundle_timestamp:
+            timestamp_label = datetime.fromisoformat(bundle_timestamp).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+        self.current_note_id = note_id
+        self.current_version_id = version_id
+        self.current_key_name = key_name
+        self.current_note_name = display_name
+        self.content_changed = False
+        if timestamp_label:
+            self.ui.status_bar.showMessage(
+                f"Loaded '{display_name}' - {timestamp_label}", 5000
+            )
+        else:
+            self.ui.status_bar.showMessage(f"Loaded '{display_name}'", 5000)
+
+        return True
 
     def export_to_pdf(self):
         path, _ = QFileDialog.getSaveFileName(self.main_widget, "Export to PDF", self.current_note_name, "*.pdf")

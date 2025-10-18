@@ -1,22 +1,41 @@
-import os
-import json
-import struct
-import hashlib
-import base64
-import uuid
-import hashlib
-import base64
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QLineEdit, 
-                             QMessageBox, QFileDialog, QGroupBox, QComboBox, QCheckBox, 
-                             QProgressBar, QInputDialog, QDialog, QHBoxLayout)
-from PyQt6.QtCore import QThread, pyqtSignal
+"""File encryption dialog and helpers for the file encryptor plugin.
 
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+The original implementation bundled a significant amount of logic without any
+descriptive comments.  This pass documents each helper class so that future
+maintainers can reason about the workflow that drives the encryption and
+decryption pipelines.
+"""
+
+import base64
+import hashlib
+import json
+import os
+import struct
+import uuid
+
+from PyQt6.QtCore import QThread, Qt, pyqtSignal
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QFileDialog,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QInputDialog,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QVBoxLayout,
+)
+
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding as symmetric_padding
 from cryptography.hazmat.primitives.asymmetric import padding as asymmetric_padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 MAGIC_NUMBER = b'\x8A\xDF\x04\xFA' 
 VERSION = b'\x01'
@@ -33,16 +52,24 @@ KEYRING_FILE = os.path.join(KEYRING_DIR, "keyring.json")
 
 
 class SelectPrivateKeyDialog(QDialog):
+    """Dialog that prompts the user to choose which private key to unlock."""
+
     def __init__(self, key_pairs, parent=None):
         super().__init__(parent)
+
         self.setWindowTitle("Select Private Key for Decryption")
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("This file was encrypted with a key pair.\nPlease select which of your private keys to use:"))
+        layout.addWidget(
+            QLabel(
+                "This file was encrypted with a key pair.\n"
+                "Please select which of your private keys to use:"
+            )
+        )
         self.key_combo = QComboBox()
         for i, key_pair in enumerate(key_pairs):
-            self.key_combo.addItem(key_pair['name'], i) 
+            self.key_combo.addItem(key_pair['name'], i)
         layout.addWidget(self.key_combo)
-        
+
         buttons_layout = QHBoxLayout()
         ok_button = QPushButton("OK")
         cancel_button = QPushButton("Cancel")
@@ -51,25 +78,34 @@ class SelectPrivateKeyDialog(QDialog):
         buttons_layout.addWidget(ok_button)
         buttons_layout.addWidget(cancel_button)
         layout.addLayout(buttons_layout)
+
     def get_selected_key_index(self):
+        """Return the index of the chosen private key or ``-1`` on cancel."""
+
         if self.exec() == QDialog.DialogCode.Accepted:
             return self.key_combo.currentData()
         return -1
 class EncryptWorker(QThread):
+    """Background task that encrypts a file and optionally emits chunks."""
+
     progress = pyqtSignal(int)
     finished = pyqtSignal(str)
     error = pyqtSignal(str)
 
     def __init__(self, in_path, out_path, method, key_data, original_filename, chunk_size_bytes=0):
         super().__init__()
+
         self.in_path = in_path
-        self.out_path = out_path 
+        self.out_path = out_path
+        self.method = method
         self.key_data = key_data
         self.original_filename = original_filename
         self.chunk_size = chunk_size_bytes
         self.is_chunking = chunk_size_bytes > 0
 
     def run(self):
+        """Encrypt ``self.in_path`` and notify the UI about the progress."""
+
         try:
             aes_key, key_header_part = None, b''
             if self.method == 'password':
@@ -173,23 +209,29 @@ class EncryptWorker(QThread):
                     json.dump(manifest, f_manifest, indent=4)
                 
                 self.finished.emit(f"File encrypted and split into {part_num} parts in:\n{self.out_path}")
-        except Exception as e:
+        except Exception as error:  # pragma: no cover - surfaced to UI
             import traceback
+
             traceback.print_exc()
-            self.error.emit(f"An error occurred during encryption: {e}")
+            self.error.emit(f"An error occurred during encryption: {error}")
 class DecryptWorker(QThread):
+    """Background task that reverses the encryption process."""
+
     progress = pyqtSignal(int)
     finished = pyqtSignal(str)
     error = pyqtSignal(str)
 
     def __init__(self, in_path, out_path, aes_key):
         super().__init__()
-        self.in_path = in_path 
+
+        self.in_path = in_path
         self.out_path = out_path
         self.aes_key = aes_key
         self.is_chunking = self.in_path.lower().endswith('manifest.json')
 
     def run(self):
+        """Decrypt ``self.in_path`` into ``self.out_path`` while reporting progress."""
+
         try:
             if not self.is_chunking:
                 with open(self.in_path, 'rb') as f_in:
@@ -276,16 +318,33 @@ class DecryptWorker(QThread):
                     f_out.write(final_unpadded)
                     
                 self.finished.emit(f"File successfully reassembled and decrypted to:\n{self.out_path}")
-        except Exception as e:
+        except Exception as error:  # pragma: no cover - surfaced to UI
             import traceback
+
             traceback.print_exc()
-            self.error.emit(f"An error occurred during decryption: {e}")
-class FileEncryptorWidget(QWidget):
-    def __init__(self, keyring_data, save_callback):
-        super().__init__()
+            self.error.emit(f"An error occurred during decryption: {error}")
+class FileEncryptorWidget(QDialog):
+    """Modal dialog presented by the file encryptor plugin.
+
+    The widget receives the decrypted keyring content alongside a callback
+    that persists updates, mirroring the signature expected by the plugin
+    loader.  Accepting an optional parent keeps Qt's window stacking behavior
+    while allowing the encryptor to appear as an independent dialog instead of
+    embedding itself inside the main application tab view.
+    """
+
+    def __init__(self, keyring_data, save_callback, parent=None):
+        super().__init__(parent)
+
+        # Present the widget as its own window while keeping the Qt parent for stacking.
+        self.setModal(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self.setWindowTitle("File Encryptor / Decryptor")
+
+        # Persist the dependencies so the plugin matches the signature used by
+        # the launcher and can access the decrypted keyring entries.
         self.keyring_data = keyring_data
-        self.save_callback = save_callback 
+        self.save_callback = save_callback
         self.worker = None
 
         main_layout = QVBoxLayout(self)
@@ -355,9 +414,11 @@ class FileEncryptorWidget(QWidget):
         self._update_ui_state()
 
     def _update_ui_state(self):
+        """Enable or disable controls based on current selections."""
+
         self.key_combo.blockSignals(True)
         self.password_edit.blockSignals(True)
-        self.split_checkbox.blockSignals(True) 
+        self.split_checkbox.blockSignals(True)
 
         try:
             has_input_file = bool(self.input_path_edit.text())
@@ -400,6 +461,8 @@ class FileEncryptorWidget(QWidget):
             self.split_checkbox.blockSignals(False)
             
     def _select_input_file(self):
+        """Prompt the user to choose a file to encrypt or decrypt."""
+
         filter_text = "Encrypted Packages (*.enc manifest.json);;All Files (*)"
         path, _ = QFileDialog.getOpenFileName(self, "Select File to Encrypt or Decrypt", "", filter_text)
         if path:
@@ -407,6 +470,8 @@ class FileEncryptorWidget(QWidget):
             self._update_ui_state()
 
     def _start_encryption(self):
+        """Validate options and hand off work to :class:`EncryptWorker`."""
+
         in_path = self.input_path_edit.text()
         if not in_path:
             return
@@ -415,12 +480,12 @@ class FileEncryptorWidget(QWidget):
         method = 'password' if self.password_edit.text() else 'key'
         key_data = self.password_edit.text() if method == 'password' else self.key_combo.currentData()['data']
         
-        out_path = "" # مسیر خروجی می‌تواند فایل یا پوشه باشد
+        out_path = ""  # Output path can be either a file or a directory.
         chunk_size_bytes = 0
 
-        # بررسی اینکه آیا کاربر حالت تقسیم فایل را انتخاب کرده است
+        # Determine if the user requested chunked output.
         if self.split_checkbox.isChecked():
-            # اگر بله، از کاربر یک پوشه می‌خواهیم
+            # Ask the user for a directory when chunking is enabled.
             try:
                 size_str = self.chunk_size_edit.text()
                 if not size_str.isdigit() or int(size_str) <= 0:
@@ -434,137 +499,228 @@ class FileEncryptorWidget(QWidget):
                 self._show_error("Invalid chunk size. Please enter a valid number.")
                 return
 
-            # دیالوگ انتخاب پوشه
+            # Directory selection dialog when chunking output.
             out_path = QFileDialog.getExistingDirectory(self, "Select Output Directory")
-            if not out_path: # اگر کاربر کنسل کند
+            if not out_path:  # Abort when the user cancels the directory selection.
                 return
         else:
-            # اگر نه، از کاربر یک نام فایل می‌خواهیم
+            # Otherwise request a filename for the encrypted output.
             random_name = f"{uuid.uuid4()}.enc"
             out_path, _ = QFileDialog.getSaveFileName(self, "Save Encrypted File As...", random_name, "Encrypted Files (*.enc)")
-            if not out_path: # اگر کاربر کنسل کند
+            if not out_path:  # Abort when the user cancels the file selection.
                 return
-        
-        # غیرفعال کردن دکمه‌ها و شروع Worker
+
+        # Disable actions and start the worker thread.
         self.encrypt_btn.setEnabled(False)
         self.decrypt_btn.setEnabled(False)
         self.progress_bar.setValue(0)
-        
-        # ارسال تمام پارامترهای لازم به Worker
-        self.worker = EncryptWorker(in_path, out_path, method, key_data, original_filename, chunk_size_bytes)
+
+        # Pass all parameters to the encryption worker.
+        self.worker = EncryptWorker(
+            in_path,
+            out_path,
+            method,
+            key_data,
+            original_filename,
+            chunk_size_bytes,
+        )
         self.worker.progress.connect(self.progress_bar.setValue)
         self.worker.finished.connect(self._on_finished)
         self.worker.error.connect(self._show_error)
         self.worker.start()
 
     def _start_decryption(self):
+        """Inspect the selected file and launch :class:`DecryptWorker`."""
+
         in_path = self.input_path_edit.text()
-        if not in_path: return
+        if not in_path:
+            return
 
         try:
             aes_key = None
             original_filename = ""
-            
+
             if in_path.lower().endswith('manifest.json'):
-                with open(in_path, 'r') as f:
-                    manifest = json.load(f)
-                
+                with open(in_path, 'r', encoding='utf-8') as manifest_file:
+                    manifest = json.load(manifest_file)
+
                 header = base64.b64decode(manifest['encryption_header'])
                 original_filename_from_manifest = manifest['original_filename']
                 header_view = memoryview(header)
-                
+
                 offset = len(MAGIC_NUMBER) + 1
-                enc_type = header_view[offset:offset+1].tobytes(); offset += 1
-                
+                enc_type = header_view[offset : offset + 1].tobytes()
+                offset += 1
+
                 if enc_type == TYPE_SYMMETRIC:
-                    password, ok = QInputDialog.getText(self, "Password", "Enter file password:", QLineEdit.EchoMode.Password)
-                    if not ok or not password: self._show_error("Decryption cancelled."); return
-                    
-                    salt = header_view[offset:offset+SALT_SIZE].tobytes()
-                    offset += SALT_SIZE 
-                    
+                    password, ok = QInputDialog.getText(
+                        self,
+                        "Password",
+                        "Enter file password:",
+                        QLineEdit.EchoMode.Password,
+                    )
+                    if not ok or not password:
+                        self._show_error("Decryption cancelled.")
+                        return
+
+                    salt = header_view[offset : offset + SALT_SIZE].tobytes()
+                    offset += SALT_SIZE
+
                     kdf = PBKDF2HMAC(hashes.SHA256(), AES_KEY_SIZE, salt, ITERATIONS)
                     aes_key = kdf.derive(password.encode())
                 elif enc_type == TYPE_HYBRID:
-                    key_len = struct.unpack('>H', header_view[offset:offset+2])[0]; offset += 2
-                    encrypted_session_key = header_view[offset:offset+key_len].tobytes()
-                    offset += key_len 
-                    
-                    if not self.keyring_data['my_key_pairs']: self._show_error("No private keys in keyring."); return
-                    
+                    key_len = struct.unpack('>H', header_view[offset : offset + 2])[0]
+                    offset += 2
+                    encrypted_session_key = header_view[offset : offset + key_len].tobytes()
+                    offset += key_len
+
+                    if not self.keyring_data['my_key_pairs']:
+                        self._show_error("No private keys in keyring.")
+                        return
+
                     dialog = SelectPrivateKeyDialog(self.keyring_data['my_key_pairs'], self)
                     idx = dialog.get_selected_key_index()
-                    if idx < 0: self._show_error("Decryption cancelled."); return
-                    
+                    if idx < 0:
+                        self._show_error("Decryption cancelled.")
+                        return
+
                     key_pair = self.keyring_data['my_key_pairs'][idx]
-                    key_pem, key_name = key_pair['private_key'].encode(), key_pair['name']
-                    
-                    private_key = None
+                    key_pem = key_pair['private_key'].encode()
+                    key_name = key_pair['name']
+
                     try:
                         private_key = serialization.load_pem_private_key(key_pem, None)
                     except TypeError:
-                        passphrase, ok = QInputDialog.getText(self, "Passphrase", f"Enter passphrase for '{key_name}':", QLineEdit.EchoMode.Password)
-                        if not ok: self._show_error("Decryption cancelled."); return
+                        passphrase, ok = QInputDialog.getText(
+                            self,
+                            "Passphrase",
+                            f"Enter passphrase for '{key_name}':",
+                            QLineEdit.EchoMode.Password,
+                        )
+                        if not ok:
+                            self._show_error("Decryption cancelled.")
+                            return
                         try:
-                            private_key = serialization.load_pem_private_key(key_pem, passphrase.encode())
-                        except TypeError: self._show_error("Incorrect passphrase."); return
-                    
+                            private_key = serialization.load_pem_private_key(
+                                key_pem, passphrase.encode()
+                            )
+                        except TypeError:
+                            self._show_error("Incorrect passphrase.")
+                            return
+
                     try:
-                        aes_key = private_key.decrypt(encrypted_session_key, asymmetric_padding.OAEP(mgf=asymmetric_padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))
+                        aes_key = private_key.decrypt(
+                            encrypted_session_key,
+                            asymmetric_padding.OAEP(
+                                mgf=asymmetric_padding.MGF1(algorithm=hashes.SHA256()),
+                                algorithm=hashes.SHA256(),
+                                label=None,
+                            ),
+                        )
                     except ValueError:
-                        self._show_error("Selected key is not correct for this file."); return
+                        self._show_error("Selected key is not correct for this file.")
+                        return
                 else:
-                    self._show_error("Unknown type in header."); return
-                
-                fn_len = struct.unpack('>H', header_view[offset:offset+2])[0]; offset += 2
-                encrypted_fn = header_view[offset:offset+fn_len].tobytes(); offset += fn_len
-                iv_for_fn = header_view[offset:offset+16].tobytes(); offset += 16
-                
+                    self._show_error("Unknown type in header.")
+                    return
+
+                fn_len = struct.unpack('>H', header_view[offset : offset + 2])[0]
+                offset += 2
+                encrypted_fn = header_view[offset : offset + fn_len].tobytes()
+                offset += fn_len
+                iv_for_fn = header_view[offset : offset + 16].tobytes()
+                offset += 16
+
                 fn_cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv_for_fn))
                 fn_decryptor = fn_cipher.decryptor()
                 fn_unpadder = symmetric_padding.PKCS7(algorithms.AES.block_size).unpadder()
                 padded = fn_decryptor.update(encrypted_fn) + fn_decryptor.finalize()
                 original_fn_bytes = fn_unpadder.update(padded) + fn_unpadder.finalize()
                 original_filename = original_fn_bytes.decode('utf-8')
-                
+
                 if original_filename != original_filename_from_manifest:
                     self._show_error("Manifest file might be corrupt. Filename mismatch.")
                     return
 
-          
             elif in_path.lower().endswith('.enc'):
-                with open(in_path, 'rb') as f_in:
-                    magic = f_in.read(len(MAGIC_NUMBER)); version = f_in.read(1)
-                    if magic != MAGIC_NUMBER or version > VERSION: self._show_error("Invalid/unsupported file."); return
-                    enc_type = f_in.read(1)
+                with open(in_path, 'rb') as encrypted_file:
+                    magic = encrypted_file.read(len(MAGIC_NUMBER))
+                    version = encrypted_file.read(1)
+                    if magic != MAGIC_NUMBER or version > VERSION:
+                        self._show_error("Invalid/unsupported file.")
+                        return
+
+                    enc_type = encrypted_file.read(1)
                     if enc_type == TYPE_SYMMETRIC:
-                        password, ok = QInputDialog.getText(self, "Password", "Enter file password:", QLineEdit.EchoMode.Password)
-                        if not ok or not password: self._show_error("Decryption cancelled."); return
-                        salt = f_in.read(SALT_SIZE)
+                        password, ok = QInputDialog.getText(
+                            self,
+                            "Password",
+                            "Enter file password:",
+                            QLineEdit.EchoMode.Password,
+                        )
+                        if not ok or not password:
+                            self._show_error("Decryption cancelled.")
+                            return
+                        salt = encrypted_file.read(SALT_SIZE)
                         kdf = PBKDF2HMAC(hashes.SHA256(), AES_KEY_SIZE, salt, ITERATIONS)
                         aes_key = kdf.derive(password.encode())
                     elif enc_type == TYPE_HYBRID:
-                        key_len = struct.unpack('>H', f_in.read(2))[0]
-                        encrypted_session_key = f_in.read(key_len)
-                        if not self.keyring_data['my_key_pairs']: self._show_error("No private keys in keyring."); return
+                        key_len = struct.unpack('>H', encrypted_file.read(2))[0]
+                        encrypted_session_key = encrypted_file.read(key_len)
+
+                        if not self.keyring_data['my_key_pairs']:
+                            self._show_error("No private keys in keyring.")
+                            return
+
                         dialog = SelectPrivateKeyDialog(self.keyring_data['my_key_pairs'], self)
                         idx = dialog.get_selected_key_index()
-                        if idx < 0: self._show_error("Decryption cancelled."); return
+                        if idx < 0:
+                            self._show_error("Decryption cancelled.")
+                            return
+
                         key_pair = self.keyring_data['my_key_pairs'][idx]
-                        key_pem, key_name = key_pair['private_key'].encode(), key_pair['name']
-                        private_key = None
-                        try: private_key = serialization.load_pem_private_key(key_pem, None)
+                        key_pem = key_pair['private_key'].encode()
+                        key_name = key_pair['name']
+
+                        try:
+                            private_key = serialization.load_pem_private_key(key_pem, None)
                         except TypeError:
-                            passphrase, ok = QInputDialog.getText(self, "Passphrase", f"Enter passphrase for '{key_name}':", QLineEdit.EchoMode.Password)
-                            if not ok: self._show_error("Decryption cancelled."); return
-                            try: private_key = serialization.load_pem_private_key(key_pem, passphrase.encode())
-                            except TypeError: self._show_error("Incorrect passphrase."); return
-                        try: aes_key = private_key.decrypt(encrypted_session_key, asymmetric_padding.OAEP(mgf=asymmetric_padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))
-                        except ValueError: self._show_error("Selected key is not correct for this file."); return
-                    else: self._show_error("Unknown type."); return
-                    fn_len = struct.unpack('>H', f_in.read(2))[0]
-                    encrypted_fn = f_in.read(fn_len)
-                    iv_for_fn = f_in.read(16)
+                            passphrase, ok = QInputDialog.getText(
+                                self,
+                                "Passphrase",
+                                f"Enter passphrase for '{key_name}':",
+                                QLineEdit.EchoMode.Password,
+                            )
+                            if not ok:
+                                self._show_error("Decryption cancelled.")
+                                return
+                            try:
+                                private_key = serialization.load_pem_private_key(
+                                    key_pem, passphrase.encode()
+                                )
+                            except TypeError:
+                                self._show_error("Incorrect passphrase.")
+                                return
+
+                        try:
+                            aes_key = private_key.decrypt(
+                                encrypted_session_key,
+                                asymmetric_padding.OAEP(
+                                    mgf=asymmetric_padding.MGF1(algorithm=hashes.SHA256()),
+                                    algorithm=hashes.SHA256(),
+                                    label=None,
+                                ),
+                            )
+                        except ValueError:
+                            self._show_error("Selected key is not correct for this file.")
+                            return
+                    else:
+                        self._show_error("Unknown type.")
+                        return
+
+                    fn_len = struct.unpack('>H', encrypted_file.read(2))[0]
+                    encrypted_fn = encrypted_file.read(fn_len)
+                    iv_for_fn = encrypted_file.read(16)
                     fn_cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv_for_fn))
                     fn_decryptor = fn_cipher.decryptor()
                     fn_unpadder = symmetric_padding.PKCS7(algorithms.AES.block_size).unpadder()
@@ -575,28 +731,41 @@ class FileEncryptorWidget(QWidget):
                 self._show_error("Please select a valid '.enc' file or a 'manifest.json' to decrypt.")
                 return
 
-            out_path, _ = QFileDialog.getSaveFileName(self, "Save Decrypted File As...", original_filename)
-            if not out_path: return
+            out_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save Decrypted File As...",
+                original_filename,
+            )
+            if not out_path:
+                return
 
-            self.encrypt_btn.setEnabled(False); self.decrypt_btn.setEnabled(False); self.progress_bar.setValue(0)
+            self.encrypt_btn.setEnabled(False)
+            self.decrypt_btn.setEnabled(False)
+            self.progress_bar.setValue(0)
+
             self.worker = DecryptWorker(in_path, out_path, aes_key)
             self.worker.progress.connect(self.progress_bar.setValue)
             self.worker.finished.connect(self._on_finished)
             self.worker.error.connect(self._show_error)
             self.worker.start()
-            
-        except Exception as e:
+
+        except Exception as error:  # pragma: no cover - surfaced to UI
             import traceback
+
             traceback.print_exc()
-            self._show_error(f"Failed to process file: {e}")
+            self._show_error(f"Failed to process file: {error}")
 
     def _on_finished(self, message):
+        """Re-enable actions when a worker signals completion."""
+
         QMessageBox.information(self, "Success", message)
         self.worker = None
         self.progress_bar.setValue(100)
         self._update_ui_state()
 
     def _show_error(self, message):
+        """Display an error message and reset the worker state."""
+
         QMessageBox.critical(self, "Error", message)
         self.worker = None
         self.progress_bar.setValue(0)
