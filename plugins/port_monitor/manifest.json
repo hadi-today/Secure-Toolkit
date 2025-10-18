@@ -1,0 +1,11 @@
+{
+  "name": "PortMonitor",
+  "button_text": "Port Monitor",
+  "description": "Monitor local listening ports in the background and log availability changes.",
+  "module": "plugin",
+  "entry_point": "PortMonitorWidget",
+  "status_check": {
+    "enabled": true,
+    "function_name": "is_monitor_running"
+  }
+}
