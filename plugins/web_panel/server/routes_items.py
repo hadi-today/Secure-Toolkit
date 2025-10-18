@@ -49,3 +49,4 @@ def delete_item(item_id):
     db.session.delete(item)
     db.session.commit()
     return '', 204
+

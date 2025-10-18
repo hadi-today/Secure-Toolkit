@@ -66,3 +66,4 @@ def discover_plugins():
             logging.error("Failed to load web plugin '%s': %s", plugin_name, error)
 
     return discovered
+

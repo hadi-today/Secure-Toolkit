@@ -1,7 +1,18 @@
 import os
 import json
-from PyQt6.QtWidgets import (QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QLineEdit, 
-                             QMessageBox, QFileDialog, QGroupBox, QComboBox, QTabWidget)
+from PyQt6.QtWidgets import (
+    QDialog,
+    QVBoxLayout,
+    QGridLayout,
+    QLabel,
+    QPushButton,
+    QLineEdit,
+    QMessageBox,
+    QFileDialog,
+    QGroupBox,
+    QComboBox,
+    QTabWidget,
+)
 from PyQt6.QtCore import Qt
 
 from cryptography.hazmat.primitives import hashes, serialization
@@ -12,13 +23,23 @@ KEYRING_DIR = os.path.join(os.path.dirname(__file__), '..', 'keyring_manager')
 KEYRING_FILE = os.path.join(KEYRING_DIR, "keyring.json")
 
 
-class FileSignerWidget(QWidget):
-    def __init__(self, keyring_data, save_callback):
-        super().__init__()
+class FileSignerWidget(QDialog):
+    """Modal dialog that provides file signing and verification tools."""
+
+    def __init__(self, keyring_data, save_callback, parent=None):
+        # Accept the optional parent supplied by the plugin launcher while still
+        # presenting the signer as its own dialog window.
+        super().__init__(parent)
+
         self.setWindowTitle("Digital Signature Tool")
+        self.setModal(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        self.setMinimumSize(500, 400)
+
+        # Persist the injected dependencies for future enhancements that may
+        # need to access the keyring or persist changes.
         self.keyring_data = keyring_data
         self.save_callback = save_callback
-        self.setMinimumSize(500, 400)
 
         main_layout = QVBoxLayout(self)
         self.tab_widget = QTabWidget()

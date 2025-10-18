@@ -12,3 +12,4 @@ def index():
 @main_bp.route('/api/status')
 def status():
     return jsonify({'status': 'ok', 'message': 'Server is running.'})
+

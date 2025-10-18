@@ -10,3 +10,4 @@ def setup_server(host, port, password_verifier):
     httpd = make_server(host, port, app)
     print(f'Using standard Python WSGI server (wsgiref) on http://{host}:{port}')
     return httpd
+

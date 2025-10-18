@@ -45,3 +45,4 @@ class ServerWorker(QObject):
     def stop(self):
         self.log_message.emit('Shutdown signal received. Requesting event loop to stop...')
         self._is_running = False
+

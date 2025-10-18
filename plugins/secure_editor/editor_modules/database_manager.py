@@ -33,7 +33,7 @@ class DatabaseManager:
         cursor = self.conn.cursor()
         cursor.execute("SELECT id FROM notes WHERE name = ?", (name,))
         note = cursor.fetchone()
-        
+
         if not note:
             cursor.execute("INSERT INTO notes (name, tags) VALUES (?, ?)", (name, tags))
             note_id = cursor.lastrowid
@@ -46,8 +46,10 @@ class DatabaseManager:
             INSERT INTO versions (note_id, timestamp, content_ciphertext, wrapped_cek, encrypting_key_name)
             VALUES (?, ?, ?, ?, ?)
         """, (note_id, timestamp, crypto_bundle['content_ciphertext'], crypto_bundle['wrapped_cek'], key_name))
-        
+
+        version_id = cursor.lastrowid
         self.conn.commit()
+        return version_id
 
     def get_all_notes(self):
         cursor = self.conn.cursor()
@@ -61,7 +63,10 @@ class DatabaseManager:
         
     def get_version_bundle(self, version_id):
         cursor = self.conn.cursor()
-        cursor.execute("SELECT content_ciphertext, wrapped_cek, encrypting_key_name FROM versions WHERE id = ?", (version_id,))
+        cursor.execute(
+            "SELECT content_ciphertext, wrapped_cek, encrypting_key_name, timestamp FROM versions WHERE id = ?",
+            (version_id,),
+        )
         return cursor.fetchone()
     def get_note_id_by_name(self, name):
         cursor = self.conn.cursor()

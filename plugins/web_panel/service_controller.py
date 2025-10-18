@@ -7,6 +7,7 @@ that worker, stream its logs back into the UI, and terminate it cleanly.
 
 import json
 import os
+import signal
 import subprocess
 import sys
 from urllib.parse import quote_plus
@@ -96,6 +97,140 @@ class WebPanelServiceController:
             self.log_reader.wait()
             self.log_reader = None
 
+    def force_kill_port(self, port):
+        """Attempt to terminate any process currently bound to ``port``.
+
+        Returns a tuple ``(terminated_pids, errors)`` so the caller can provide
+        feedback to the user.  The helper first checks whether the bundled web
+        panel service is occupying the port, then falls back to platform
+        specific utilities for any remaining listeners.
+        """
+
+        terminated = []
+        errors = []
+
+        # Stop the managed worker first so we do not orphan the process entry.
+        if self.is_running():
+            process = self.main_window.background_services[self.service_name]['process']
+            running_port = process.args[3]
+            if str(running_port) == str(port):
+                terminated.append(process.pid)
+                self.stop()
+
+        # Nothing else to do when the platform specific utilities are missing.
+        try:
+            extra_pids, extra_errors = self._terminate_external_processes(port)
+            terminated.extend(extra_pids)
+            errors.extend(extra_errors)
+        except FileNotFoundError as error:
+            errors.append(str(error))
+
+        # Remove duplicates while preserving order for readability.
+        seen = set()
+        ordered = []
+        for pid in terminated:
+            if pid not in seen:
+                seen.add(pid)
+                ordered.append(pid)
+
+        return ordered, errors
+
+    def _terminate_external_processes(self, port):
+        """Use OS tooling to kill any non-managed process on ``port``."""
+
+        terminated = []
+        errors = []
+
+        if os.name == 'nt':
+            result = subprocess.run(
+                ['netstat', '-ano'], capture_output=True, text=True, check=False
+            )
+
+            if result.returncode != 0:
+                errors.append(result.stderr.strip() or 'netstat command failed')
+                return terminated, errors
+
+            seen = set()
+            for line in result.stdout.splitlines():
+                if f':{port} ' not in line:
+                    continue
+                parts = line.split()
+                if not parts:
+                    continue
+                pid = parts[-1]
+                if not pid.isdigit():
+                    continue
+                pid_int = int(pid)
+                if pid_int in seen:
+                    continue
+                seen.add(pid_int)
+                kill_result = subprocess.run(
+                    ['taskkill', '/PID', pid, '/F', '/T'],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                if kill_result.returncode == 0:
+                    terminated.append(pid_int)
+                else:
+                    errors.append(
+                        kill_result.stderr.strip()
+                        or kill_result.stdout.strip()
+                        or f'Failed to terminate PID {pid}'
+                    )
+            return terminated, errors
+
+        # POSIX style systems – try lsof first for detailed PID listings.
+        lsof_missing = False
+        try:
+            result = subprocess.run(
+                ['lsof', '-t', f'-i:{port}'], capture_output=True, text=True, check=False
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                for pid_text in set(result.stdout.split()):
+                    try:
+                        pid = int(pid_text)
+                    except ValueError:
+                        continue
+                    try:
+                        os.kill(pid, signal.SIGTERM)
+                        terminated.append(pid)
+                    except PermissionError as error:
+                        errors.append(f'Permission denied terminating PID {pid}: {error}')
+                    except ProcessLookupError:
+                        continue
+            elif result.returncode == 127:
+                lsof_missing = True
+        except FileNotFoundError:
+            lsof_missing = True
+
+        # ``fuser`` is a good fallback on many Linux distributions and can also
+        # take care of any stubborn processes that ignored SIGTERM.
+        try:
+            kill_result = subprocess.run(
+                ['fuser', '-k', f'{port}/tcp'], capture_output=True, text=True, check=False
+            )
+            if kill_result.returncode == 0:
+                for token in kill_result.stdout.split():
+                    if token.isdigit():
+                        terminated.append(int(token))
+            elif kill_result.returncode == 127:
+                if lsof_missing:
+                    raise FileNotFoundError('Neither lsof nor fuser utilities are available.')
+            elif kill_result.returncode not in (0, 1):
+                errors.append(
+                    kill_result.stderr.strip()
+                    or kill_result.stdout.strip()
+                    or 'fuser command failed'
+                )
+        except FileNotFoundError as error:
+            if lsof_missing:
+                raise
+            errors.append(str(error))
+
+        return terminated, errors
+
+
     def _load_auth_config(self):
         """Fetch hashed credential data that the web server expects."""
 
@@ -133,3 +268,4 @@ class WebPanelServiceController:
             text=True,
             creationflags=creation_flags,
         )
+

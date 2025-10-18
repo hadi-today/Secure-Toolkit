@@ -88,3 +88,4 @@ def create_app(password_verifier=None):
     app.register_blueprint(items_bp, url_prefix='/api/items')
 
     return app
+

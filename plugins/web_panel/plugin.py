@@ -70,6 +70,7 @@ class WebPanelWidget(QDialog):
         self.ip_combo = QComboBox()
         self.port_input = QLineEdit("8080")
         self.start_stop_button = QPushButton("Start Server")
+        self.kill_port_button = QPushButton("Kill Port 8080")
         self.status_label = QLabel("Status: Stopped")
         self.log_output = QTextEdit()
 
@@ -92,6 +93,56 @@ class WebPanelWidget(QDialog):
 
         layout = QVBoxLayout(self)
 
+        self.setStyleSheet(
+            """
+            QDialog {
+                background-color: #111827;
+            }
+            QGroupBox {
+                border: 1px solid #1f2937;
+                border-radius: 10px;
+                margin-top: 16px;
+                color: #e5e7eb;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 16px;
+                padding: 0 6px;
+                font-weight: 600;
+            }
+            QLabel {
+                color: #e5e7eb;
+            }
+            QComboBox, QLineEdit {
+                background-color: #0f172a;
+                color: #e5e7eb;
+                border: 1px solid #1f2937;
+                border-radius: 8px;
+                padding: 6px 8px;
+            }
+            QPushButton {
+                background-color: #2563eb;
+                color: white;
+                border-radius: 8px;
+                padding: 8px 18px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #1d4ed8;
+            }
+            QPushButton[class="danger"] {
+                background-color: #dc2626;
+            }
+            QPushButton[class="danger"]:hover {
+                background-color: #b91c1c;
+            }
+            QTextEdit {
+                border: 1px solid #1f2937;
+                border-radius: 8px;
+            }
+            """
+        )
+
         # Offer sensible network defaults while also enumerating local
         # interfaces so the user can expose the web panel on the LAN if needed.
         populate_ip_addresses(self.ip_combo)
@@ -99,8 +150,23 @@ class WebPanelWidget(QDialog):
         self.log_output.setReadOnly(True)
         self.status_label.setStyleSheet("color: red;")
 
+        for button in (self.start_stop_button, self.kill_port_button):
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.setMinimumHeight(36)
+
+        self.log_output.setStyleSheet(
+            "QTextEdit { background-color: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 8px; }"
+        )
+
         settings_group = create_settings_group(self.ip_combo, self.port_input)
-        control_group = create_control_group(self.start_stop_button, self.status_label)
+        self.kill_port_button.setToolTip(
+            "Forcefully stop any process that is currently bound to port 8080."
+        )
+        self.kill_port_button.setProperty("class", "danger")
+
+        control_group = create_control_group(
+            self.start_stop_button, self.kill_port_button, self.status_label
+        )
         log_group = create_log_group(self.log_output)
 
         layout.addWidget(settings_group)
@@ -110,6 +176,7 @@ class WebPanelWidget(QDialog):
         # The only interactive control toggles the server lifecycle; clicking
         # the button will decide to start or stop based on current state.
         self.start_stop_button.clicked.connect(self.toggle_server)
+        self.kill_port_button.clicked.connect(self.kill_port_8080)
 
     def _sync_ui_with_service_state(self):
         """Display the correct status depending on the running service."""
@@ -179,3 +246,22 @@ class WebPanelWidget(QDialog):
         self.status_label.setStyleSheet("color: red;")
         self.ip_combo.setEnabled(True)
         self.port_input.setEnabled(True)
+
+    def kill_port_8080(self):
+        """Forcefully terminate any process bound to the default web port."""
+
+        killed, errors = self.service_controller.force_kill_port("8080")
+
+        if killed:
+            killed_text = ", ".join(str(pid) for pid in killed)
+            self.log_output.append(
+                f"Terminated processes on port 8080: {killed_text}"
+            )
+        else:
+            self.log_output.append("No active processes detected on port 8080.")
+
+        for error in errors:
+            self.log_output.append(f"Warning: {error}")
+
+        self._sync_ui_with_service_state()
+

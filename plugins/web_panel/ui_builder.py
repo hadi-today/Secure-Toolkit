@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QFormLayout,
     QGroupBox,
+    QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
@@ -25,12 +26,22 @@ def create_settings_group(ip_combo: QComboBox, port_input: QLineEdit) -> QGroupB
     return settings_group
 
 
-def create_control_group(start_stop_button: QPushButton, status_label: QLabel) -> QGroupBox:
+def create_control_group(
+    start_stop_button: QPushButton,
+    kill_button: QPushButton,
+    status_label: QLabel,
+) -> QGroupBox:
     """Return the control group that holds the lifecycle toggle and status."""
 
     control_group = QGroupBox('Server Control')
     control_layout = QVBoxLayout()
-    control_layout.addWidget(start_stop_button)
+
+    button_row = QHBoxLayout()
+    button_row.setSpacing(12)
+    button_row.addWidget(start_stop_button)
+    button_row.addWidget(kill_button)
+
+    control_layout.addLayout(button_row)
     control_layout.addWidget(status_label)
     control_group.setLayout(control_layout)
     return control_group
@@ -60,3 +71,4 @@ def populate_ip_addresses(ip_combo: QComboBox) -> None:
         # DNS resolution can fail in sandboxed or offline environments.  The
         # dialog still works with the default options, so we ignore the error.
         pass
+
