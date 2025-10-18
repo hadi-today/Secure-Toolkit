@@ -15,4 +15,4 @@ class AutoLocker(QObject):
 
     def reset(self):
         if self.timer.isActive():
-            self.timer.start() 
+            self.timer.start() # Reset the timer

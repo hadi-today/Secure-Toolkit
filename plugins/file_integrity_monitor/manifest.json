@@ -1,0 +1,7 @@
+{
+  "name": "FileIntegrityMonitor",
+  "button_text": "File Integrity",
+  "description": "Detects unexpected changes by monitoring file hashes and reporting new, modified, or missing files.",
+  "module": "plugin",
+  "entry_point": "FileIntegrityMonitorWidget"
+}

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keyring Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('keyring_manager_panel.static', filename='keyring.css') }}">
+</head>
+<body>
+    <main class="keyring-page" aria-live="polite">
+        <header class="keyring-header">
+            <h1><i class="fas fa-key"></i> Keyring Manager</h1>
+            <p class="keyring-subtitle">Review, download, and share the public keys stored in your secure vault.</p>
+        </header>
+
+        <section class="keyring-section" aria-labelledby="my-keys-heading">
+            <div class="section-heading">
+                <h2 id="my-keys-heading">
+                    My public keys
+                    <span class="count-badge" data-role="my-count-badge" aria-live="polite">0</span>
+                </h2>
+                <p>These keys belong to you. Only the public portion is shown here.</p>
+            </div>
+            <div id="my-keys-list" class="key-list" role="list"></div>
+            <p id="my-keys-empty" class="empty-state" hidden>You do not have any key pairs yet.</p>
+        </section>
+
+        <section class="keyring-section" aria-labelledby="contact-keys-heading">
+            <div class="section-heading">
+                <h2 id="contact-keys-heading">
+                    Contacts' public keys
+                    <span class="count-badge" data-role="contact-count-badge" aria-live="polite">0</span>
+                </h2>
+                <p>Share your friends' public keys with your team or add new ones below.</p>
+            </div>
+            <div id="contact-keys-list" class="key-list" role="list"></div>
+            <p id="contact-keys-empty" class="empty-state" hidden>No contact keys stored yet.</p>
+
+            <form id="add-contact-form" class="add-form" novalidate>
+                <h3>Add a contact's public key</h3>
+                <div class="form-field">
+                    <label for="contact-name">Contact name</label>
+                    <input id="contact-name" name="contact-name" type="text" placeholder="Alice" required>
+                </div>
+                <div class="form-field">
+                    <label for="contact-key">Public key</label>
+                    <textarea id="contact-key" name="contact-key" rows="6" placeholder="-----BEGIN PUBLIC KEY-----" required></textarea>
+                </div>
+                <button type="submit" class="primary-button"><i class="fas fa-plus"></i> Save contact key</button>
+            </form>
+        </section>
+
+        <section id="message-area" class="message" role="status" hidden></section>
+    </main>
+
+    <script src="{{ url_for('keyring_manager_panel.static', filename='keyring.js') }}" defer></script>
+</body>
+</html>

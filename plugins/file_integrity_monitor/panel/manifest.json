@@ -1,0 +1,8 @@
+{
+  "name": "File Integrity Monitor",
+  "description": "View monitored folders and recent scan results from the desktop agent.",
+  "blueprint_module": "panel.routes",
+  "blueprint_name": "file_integrity_bp",
+  "gadgets_module": "panel.gadgets",
+  "gadgets_factory": "provide_gadgets"
+}

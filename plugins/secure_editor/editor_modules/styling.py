@@ -28,7 +28,7 @@ QStatusBar {
 }
 """
 
-LIGHT_STYLESHEET = "" 
+LIGHT_STYLESHEET = "" # Default Qt style is light
 
 def apply_theme(app, theme_name):
     if theme_name == "dark":

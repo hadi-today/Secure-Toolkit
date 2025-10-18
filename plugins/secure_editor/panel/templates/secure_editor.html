@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Editor - Web Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhisnx1LZ9erjRzCQXDutUe1koXSPo6e7zu+730Gpzt7H3H9u2O3V0CPthe5LR9QQg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="{{ url_for('secure_editor_panel.static', filename='panel.css') }}">
+</head>
+<body>
+    <div class="secure-editor-container">
+        <header class="panel-header">
+            <div>
+                <h1>Secure Editor archive</h1>
+                <p class="subtitle">Browse encrypted notes saved from the desktop editor, inspect version history, and compare changes.</p>
+            </div>
+            <div class="summary">
+                <span class="summary-item">
+                    <i class="fa-solid fa-folder"></i>
+                    <span id="summary-note-count">0 notes</span>
+                </span>
+                <span class="summary-item">
+                    <i class="fa-solid fa-clock"></i>
+                    <span id="summary-updated">Last update: -</span>
+                </span>
+            </div>
+        </header>
+
+        <p class="status" id="status-message">Loading notes…</p>
+
+        <section class="keyring-controls" aria-label="Keyring controls">
+            <label class="keyring-field">
+                <span class="field-label">Decryption key</span>
+                <select id="key-select" aria-label="Select private key"></select>
+            </label>
+            <label id="key-passphrase-wrapper" class="keyring-field hidden">
+                <span class="field-label">Passphrase</span>
+                <input type="password" id="key-passphrase" placeholder="Enter passphrase" autocomplete="off">
+            </label>
+            <button type="button" id="unlock-key-button" class="keyring-action">Unlock</button>
+            <span id="key-status" class="key-status">Select a key to check its status.</span>
+        </section>
+
+        <div class="columns">
+            <section class="panel notes-panel">
+                <div class="panel-title">
+                    <h2><i class="fa-solid fa-book"></i> Notes</h2>
+                </div>
+                <ul id="notes-list" class="list"></ul>
+            </section>
+
+            <section class="panel versions-panel">
+                <div class="panel-title">
+                    <h2><i class="fa-solid fa-code-branch"></i> Versions</h2>
+                    <label class="compare-control">
+                        Compare with:
+                        <select id="compare-select">
+                            <option value="">Previous version</option>
+                        </select>
+                    </label>
+                </div>
+                <ul id="versions-list" class="list"></ul>
+            </section>
+
+            <section class="panel content-panel">
+                <div class="panel-title">
+                    <h2 id="content-title">Select a version to preview</h2>
+                </div>
+                <div id="content-view" class="content-view">
+                    <p class="placeholder">Choose a version from the list to decrypt and preview its contents.</p>
+                </div>
+                <div class="diff-section">
+                    <div class="panel-title">
+                        <h3>Detected changes</h3>
+                    </div>
+                    <p id="comparison-label" class="comparison-label">No comparison selected.</p>
+                    <div id="diff-viewer" class="diff-viewer placeholder">A side-by-side diff will appear here once two versions are available.</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="{{ url_for('secure_editor_panel.static', filename='panel.js') }}"></script>
+</body>
+</html>

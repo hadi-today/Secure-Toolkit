@@ -1,0 +1,137 @@
+.gadgets-section {
+    margin-top: 24px;
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.gadgets-section.hidden {
+    display: none;
+}
+
+.gadgets-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 20px;
+}
+
+.gadgets-header h2 {
+    margin: 0;
+    font-size: 22px;
+    color: #1e293b;
+}
+
+.gadgets-subtitle {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.gadgets-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.gadget-card {
+    background-color: #f8fafc;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    box-shadow: 0 6px 16px rgba(148, 163, 184, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.gadget-card h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1d4ed8;
+}
+
+.gadget-card p {
+    margin: 0;
+    color: #475569;
+    font-size: 14px;
+}
+
+.gadget-content {
+    font-size: 14px;
+    color: #1e293b;
+    line-height: 1.5;
+}
+
+.gadget-content pre {
+    background-color: #e2e8f0;
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.gadget-download {
+    margin-top: auto;
+}
+
+.gadget-download a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background-color: #1f7a8c;
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.gadget-download a:hover {
+    background-color: #136273;
+}
+
+.keyring-gadget {
+    display: grid;
+    gap: 8px;
+}
+
+.keyring-gadget__status {
+    margin: 0;
+    color: #475569;
+    font-style: italic;
+}
+
+.keyring-gadget__counts {
+    display: grid;
+    gap: 6px;
+}
+
+.keyring-gadget__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.keyring-gadget__row dt {
+    font-weight: 600;
+}
+
+.keyring-gadget__row dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.keyring-gadget__link {
+    justify-self: start;
+    color: #1d4ed8;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.keyring-gadget__link:hover {
+    text-decoration: underline;
+}
+

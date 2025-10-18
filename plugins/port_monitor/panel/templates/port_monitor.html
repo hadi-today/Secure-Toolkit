@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Port Monitor - Web Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-1ycn6IcaQQ40/MKBW2W4Rhisnx1LZ9erjRzCQXDutUe1koXSPo6e7zu+730Gpzt7H3H9u2O3V0CPthe5LR9QQg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="{{ url_for('port_monitor_panel.static', filename='panel.css') }}">
+</head>
+<body data-status-url="{{ url_for('port_monitor_panel.api_status') }}" data-stop-url="{{ url_for('port_monitor_panel.api_request_stop') }}">
+    <div class="port-monitor-container">
+        <header class="panel-header">
+            <div>
+                <h1><i class="fa-solid fa-network-wired"></i> Port Monitor</h1>
+                <p class="subtitle">Observe listening sockets from the desktop agent, inspect historical changes, and review recent log entries.</p>
+            </div>
+            <div id="service-chip" class="status-chip status-chip--unknown">Loading…</div>
+        </header>
+
+        <section class="status-section" aria-label="Service status">
+            <div class="status-card">
+                <h2><i class="fa-solid fa-gauge"></i> Service details</h2>
+                <dl class="status-grid">
+                    <div>
+                        <dt>Polling interval</dt>
+                        <dd id="poll-interval">—</dd>
+                    </div>
+                    <div>
+                        <dt>Last heartbeat</dt>
+                        <dd id="last-heartbeat">—</dd>
+                    </div>
+                    <div>
+                        <dt>Last change</dt>
+                        <dd id="last-event">—</dd>
+                    </div>
+                    <div>
+                        <dt>Last error</dt>
+                        <dd id="last-error">None</dd>
+                    </div>
+                </dl>
+                <div class="status-actions">
+                    <button type="button" id="stop-button" class="primary-action" disabled>
+                        <i class="fa-solid fa-stop"></i> Request stop
+                    </button>
+                    <p id="action-feedback" class="action-feedback" role="status"></p>
+                </div>
+            </div>
+            <div class="status-card">
+                <h2><i class="fa-solid fa-server"></i> Snapshot</h2>
+                <ul class="snapshot-list">
+                    <li><span class="label">Active ports</span><span id="active-count" class="value">0</span></li>
+                    <li><span class="label">Recent events</span><span id="history-count" class="value">0</span></li>
+                    <li><span class="label">Log entries</span><span id="log-count" class="value">0</span></li>
+                    <li><span class="label">Generated</span><span id="generated-at" class="value">—</span></li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="table-section" aria-label="Currently listening ports">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-wave-square"></i> Listening ports</h2>
+                <p class="section-subtitle">Updated automatically every few seconds from the desktop monitor.</p>
+            </div>
+            <div class="table-wrapper">
+                <table id="open-ports-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Protocol</th>
+                            <th scope="col">Address</th>
+                            <th scope="col">Port</th>
+                            <th scope="col">PID</th>
+                            <th scope="col">Process</th>
+                            <th scope="col">Since</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="open-empty" class="empty-state">No ports are currently listening.</p>
+            </div>
+        </section>
+
+        <section class="table-section" aria-label="Port activity history">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-clock-rotate-left"></i> Recent activity</h2>
+                <p class="section-subtitle">Shows the latest 100 open/close events recorded by the monitor.</p>
+            </div>
+            <div class="table-wrapper">
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Protocol</th>
+                            <th scope="col">Address</th>
+                            <th scope="col">Port</th>
+                            <th scope="col">PID</th>
+                            <th scope="col">Process</th>
+                            <th scope="col">Opened</th>
+                            <th scope="col">Closed</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <p id="history-empty" class="empty-state">No recent activity has been recorded yet.</p>
+            </div>
+        </section>
+
+        <section class="log-section" aria-label="Recent log entries">
+            <div class="section-header">
+                <h2><i class="fa-solid fa-list"></i> Log output</h2>
+                <p class="section-subtitle">The last 200 log messages emitted by the monitoring worker.</p>
+            </div>
+            <ul id="log-list" class="log-list"></ul>
+            <p id="logs-empty" class="empty-state">No log entries available.</p>
+        </section>
+    </div>
+
+    <script src="{{ url_for('port_monitor_panel.static', filename='panel.js') }}" defer></script>
+</body>
+</html>

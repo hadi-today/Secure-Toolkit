@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample Reporter</title>
+    <link rel="stylesheet" href="{{ url_for('reporter.static', filename='reporter_layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('reporter.static', filename='reporter_forms.css') }}">
+</head>
+
+<body>
+    <main class="page">
+        <header class="page-header">
+            <h1>Sample Reporter &amp; List Manager</h1>
+            <p>
+                This page demonstrates how a plugin can combine direct database reads with the
+                Web Panel REST APIs. The first section shows data pulled from the database, and the
+                forms below rely on the authenticated API endpoints.
+            </p>
+        </header>
+
+        <section class="snapshot" data-created="{{ 'true' if created_list else 'false' }}">
+            <h2>Server-side snapshot for “{{ list_name }}”</h2>
+            {% if error_message %}
+                <p class="error">{{ error_message }}</p>
+            {% elif snapshot %}
+                {% if created_list %}
+                    <p class="success">Sample data was missing, so it has now been created automatically.</p>
+                {% endif %}
+                <p>Found {{ snapshot | length }} item(s):</p>
+                <ul>
+                    {% for item in snapshot %}
+                        <li>
+                            <strong>{{ item.key }}</strong> —
+                            {{ item.value or 'No value' }}
+                            <span class="status">(ID {{ item.id }} – {{ 'Enabled' if item.is_enabled else 'Disabled' }})</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="error">The list is not available.</p>
+            {% endif %}
+        </section>
+
+        <section class="api-tools">
+            <div class="api-intro">
+                <h2>Manage lists via REST API</h2>
+                <p class="help">
+                    The authentication token is forwarded automatically through the iframe query string.
+                    The forms below use <code>fetch</code> to call the Web Panel APIs.
+                </p>
+                <div id="api-message" class="message" role="status"></div>
+                <button id="refresh-lists" type="button" class="primary">Refresh lists</button>
+            </div>
+
+            <div id="lists-container" class="lists"></div>
+
+            <div class="forms-grid">
+                <form id="create-list-form" class="card">
+                    <h3>Create a new list</h3>
+                    <label>List name
+                        <input type="text" name="name" required placeholder="e.g. New Monitoring Targets">
+                    </label>
+                    <label>Description (optional)
+                        <textarea name="description" placeholder="Describe what this list contains"></textarea>
+                    </label>
+                    <button type="submit" class="primary">Create list</button>
+                </form>
+
+                <form id="add-item-form" class="card">
+                    <h3>Add an item to a list</h3>
+                    <label>List ID
+                        <input type="number" name="list_id" min="1" required>
+                    </label>
+                    <label>Item key
+                        <input type="text" name="key" required placeholder="e.g. example.com">
+                    </label>
+                    <label>Item value (optional)
+                        <input type="text" name="value" placeholder="e.g. Uptime OK">
+                    </label>
+                    <label>Enabled state
+                        <select name="is_enabled">
+                            <option value="true" selected>Enabled</option>
+                            <option value="false">Disabled</option>
+                        </select>
+                    </label>
+                    <button type="submit" class="primary">Add item</button>
+                </form>
+
+                <form id="update-item-form" class="card">
+                    <h3>Update an existing item</h3>
+                    <label>Item ID
+                        <input type="number" name="item_id" min="1" required>
+                    </label>
+                    <label>New key (optional)
+                        <input type="text" name="key" placeholder="Leave empty to keep current key">
+                    </label>
+                    <label>New value (optional)
+                        <input type="text" name="value" placeholder="Leave empty to keep current value">
+                    </label>
+                    <label>Enabled state
+                        <select name="is_enabled">
+                            <option value="">No change</option>
+                            <option value="true">Enabled</option>
+                            <option value="false">Disabled</option>
+                        </select>
+                    </label>
+                    <button type="submit" class="primary">Update item</button>
+                </form>
+
+                <form id="delete-item-form" class="card">
+                    <h3>Delete an item</h3>
+                    <label>Item ID
+                        <input type="number" name="item_id" min="1" required>
+                    </label>
+                    <button type="submit" class="danger">Delete item</button>
+                </form>
+
+                <form id="delete-list-form" class="card">
+                    <h3>Delete a list</h3>
+                    <label>List ID
+                        <input type="number" name="list_id" min="1" required>
+                    </label>
+                    <button type="submit" class="danger">Delete list</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('reporter.static', filename='reporter_helpers.js') }}" defer></script>
+    <script src="{{ url_for('reporter.static', filename='reporter_forms.js') }}" defer></script>
+    <script src="{{ url_for('reporter.static', filename='reporter.js') }}" defer></script>
+</body>
+
+</html>
+

@@ -1,16 +1,12 @@
 import os
-import json
-from PyQt6.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QListWidget, QLabel, QTextEdit, 
-                             QPushButton, QMessageBox, QInputDialog, QFileDialog, QDialog, 
-                             QFormLayout, QLineEdit, QTabWidget, QComboBox)
+from PyQt6.QtWidgets import (QDialog, QHBoxLayout, QVBoxLayout, QListWidget, QLabel, QTextEdit,
+                             QPushButton, QMessageBox, QInputDialog, QFileDialog,
+                             QFormLayout, QLineEdit, QTabWidget, QComboBox, QGroupBox)
 from PyQt6.QtCore import Qt
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.backends import default_backend
 
-PLUGIN_DIR = os.path.dirname(__file__)
-KEYRING_FILE = os.path.join(PLUGIN_DIR, "keyring.json")
 
 
 
@@ -135,13 +131,21 @@ class ImportPairDialog(QDialog):
                     self.passphrase_input.text())
         return None, None, None
 
-class KeyringManagerWidget(QWidget):
-    def __init__(self, keyring_data, save_callback):
-        super().__init__()
+class KeyringManagerWidget(QDialog):
+    """Modal dialog that lets the user manage personal and contact key pairs."""
+
+    def __init__(self, keyring_data, save_callback, parent=None):
+        # Honour the optional parent provided by the plugin launcher so the
+        # dialog stacks above the main window without inheriting its layout.
+        super().__init__(parent)
         self.setWindowTitle("Keyring Manager")
+        self.setModal(True)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+
+        # Retain the injected state so changes can be persisted back to disk.
         self.keyring_data = keyring_data
         self.save_callback = save_callback
-        self.setMinimumSize(700, 500)
+        self.setMinimumSize(780, 520)
 
         main_layout = QHBoxLayout(self)
         
@@ -155,6 +159,22 @@ class KeyringManagerWidget(QWidget):
         self.tab_widget.currentChanged.connect(self._tab_changed)
 
         right_panel = QVBoxLayout()
+
+        # Summary panel that gives a quick overview and shortcut actions.
+        summary_group = QGroupBox("Keyring Overview")
+        summary_layout = QVBoxLayout()
+        self.my_keys_count_label = QLabel()
+        self.contacts_count_label = QLabel()
+        self.download_combo = QComboBox()
+        self.download_combo.setEditable(False)
+        download_button = QPushButton("Download Public Key")
+        download_button.clicked.connect(self._quick_download_public_key)
+        summary_layout.addWidget(self.my_keys_count_label)
+        summary_layout.addWidget(self.contacts_count_label)
+        summary_layout.addWidget(self.download_combo)
+        summary_layout.addWidget(download_button)
+        summary_group.setLayout(summary_layout)
+        right_panel.addWidget(summary_group)
         self.details_name = QLabel("Name: -")
         self.details_type = QLabel("Type: -")
         self.key_view = QTextEdit()
@@ -201,6 +221,7 @@ class KeyringManagerWidget(QWidget):
         delete_btn.clicked.connect(self._delete_key)
         
         self._populate_key_lists()
+        self._refresh_summary()
 
     def _populate_key_lists(self):
         self.my_keys_list_widget.clear()
@@ -209,6 +230,13 @@ class KeyringManagerWidget(QWidget):
         self.contacts_list_widget.clear()
         for item in self.keyring_data['contact_public_keys']:
             self.contacts_list_widget.addItem(item['name'])
+
+        self.download_combo.clear()
+        self.download_combo.addItem("Select a contact to download", None)
+        for contact in self.keyring_data['contact_public_keys']:
+            self.download_combo.addItem(contact['name'], contact)
+
+        self._refresh_summary()
     
     def _tab_changed(self):
         self.my_keys_list_widget.setCurrentItem(None)
@@ -327,3 +355,55 @@ class KeyringManagerWidget(QWidget):
             self.save_callback(self.keyring_data)
             self._populate_key_lists()
             self._update_details_view()
+
+    def _refresh_summary(self):
+        """Update the overview labels with the latest counts."""
+
+        my_key_count = len(self.keyring_data['my_key_pairs'])
+        contact_count = len(self.keyring_data['contact_public_keys'])
+        self.my_keys_count_label.setText(f"My key pairs: {my_key_count}")
+        self.contacts_count_label.setText(f"Contact public keys: {contact_count}")
+
+        # Ensure the combo placeholder appears when no contacts exist.
+        if contact_count == 0:
+            self.download_combo.setCurrentIndex(0)
+
+    def _quick_download_public_key(self):
+        """Allow exporting a contact key directly from the overview panel."""
+
+        selected_index = self.download_combo.currentIndex()
+        contact = self.download_combo.currentData()
+        if selected_index <= 0 or contact is None:
+            QMessageBox.information(
+                self,
+                "No Selection",
+                "Select a contact from the dropdown to download their public key.",
+            )
+            return
+
+        default_name = f"{contact['name'].replace(' ', '_')}_public.pub"
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Public Key As...",
+            default_name,
+            "Public Key (*.pub *.pem)",
+        )
+        if not file_path:
+            return
+
+        try:
+            with open(file_path, "w", encoding="utf-8") as handle:
+                handle.write(contact['public_key'])
+        except OSError as error:
+            QMessageBox.critical(
+                self,
+                "Write Error",
+                f"Could not save the public key: {error}",
+            )
+            return
+
+        QMessageBox.information(
+            self,
+            "Success",
+            "The public key has been saved successfully.",
+        )
