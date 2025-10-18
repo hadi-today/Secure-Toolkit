@@ -1,0 +1,8 @@
+{
+  "display_name": "Port Monitor",
+  "blueprint_module": "panel.routes",
+  "blueprint_name": "port_monitor_bp",
+  "icon": "fa-network-wired",
+  "gadgets_module": "panel.gadgets",
+  "gadgets_factory": "provide_gadgets"
+}
